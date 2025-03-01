@@ -8,6 +8,9 @@ namespace WebApiPatrimonio.Context
         public DbSet<Bien> PAT_BIENES { get; set; }
 
         public DbSet<Levantamiento> PAT_LEVANTAMIENTO_INVENTARIO { get; set; }
+
+        public DbSet<ProgramaLevatamiento> PAT_EVENTOINVENTARIO { get; set; }
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
         {
