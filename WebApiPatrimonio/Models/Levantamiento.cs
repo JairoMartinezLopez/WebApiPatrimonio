@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WebApiPatrimonio.Models
 {
-    [Table("PAT_LEVANTAMIENTO_INVENTARIO")] // Especifica el nombre de la tabla y el esquema
+    [Table("PAT_LEVANTAMIENTO_INVENTARIO")] 
     public class Levantamiento
     {
         [Key]
