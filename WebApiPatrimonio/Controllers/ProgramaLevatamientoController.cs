@@ -76,12 +76,16 @@ namespace WebApiPatrimonio.Controllers
         // POST: api/ProgramaLevatamiento
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<ProgramaLevatamiento>> PostProgramaLevatamiento(ProgramaLevatamiento programaLevatamiento)
+        public async Task<IActionResult> InsertarEventoInventario([FromBody] EventoInventarioRequest request)
         {
-            _context.PAT_EVENTOINVENTARIO.Add(programaLevatamiento);
-            await _context.SaveChangesAsync();
+            if (request == null) return BadRequest("Datos inválidos");
 
-            return CreatedAtAction("GetProgramaLevatamiento", new { id = programaLevatamiento.IdEventoInventario }, programaLevatamiento);
+            int idEventoInventario = await _context.InsertarEventoInventario(
+                request.IdGeneral, request.IdAreaSistemaUsuario, request.IdPantalla,
+                request.FechaInicio, request.FechaTermino, request.IdArea,
+                request.IdAreaSistemaUsuario2, request.IdEventoEstado);
+
+            return Ok(new { IdEventoInventario = idEventoInventario });
         }
 
         // DELETE: api/ProgramaLevatamiento/5
