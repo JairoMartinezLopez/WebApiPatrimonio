@@ -34,7 +34,33 @@ namespace WebApiPatrimonio.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Bien>> GetBien(long id)
         {
-            var bien = await _context.PAT_BIENES.FindAsync(id);
+            var bien = await _context.PAT_BIENES.
+                Select(b => new Bien  // ⬅️ Solo selecciona las columnas existentes en la BD
+            {
+                IdBien = b.IdBien,
+                IdColor = b.IdColor,
+                FechaAlta = b.FechaAlta,
+                Aviso = b.Aviso,
+                Serie = b.Serie,
+                Modelo = b.Modelo,
+                IdEstadoFisico = b.IdEstadoFisico,
+                IdMarca = b.IdMarca,
+                Costo = b.Costo,
+                Etiquetado = b.Etiquetado,
+                FechaEtiquetado = b.FechaEtiquetado,
+                Estatus = b.Estatus,
+                FechaBaja = b.FechaBaja,
+                IdCausal = b.IdCausal,
+                IdDisposicion = b.IdDisposicion,
+                IdFactura = b.IdFactura,
+                NoInventario = b.NoInventario,
+                IdCatBien = b.IdCatBien,
+                Observaciones = b.Observaciones,
+                IdCategoria = b.IdCategoria,
+                IdFinanciamiento = b.IdFinanciamiento
+            })
+        .Where(b => b.IdBien == id)
+        .SingleOrDefaultAsync();
 
             if (bien == null)
             {
