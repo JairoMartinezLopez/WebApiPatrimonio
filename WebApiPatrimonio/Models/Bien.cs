@@ -3,11 +3,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WebApiPatrimonio.Models
 {
-    [Table("PAT_BIENES")]
+
     public class Bien
     {
         [Key]
         public long IdBien { get; set; }  // bigint
+        public int IdAreaSistemaUsuario { get; set; }
+        public int IdPantalla { get; set; }
 
         public int? IdColor { get; set; }  // int
 
@@ -58,5 +60,9 @@ namespace WebApiPatrimonio.Models
         public int? IdPatrimonio { get; set; }  // int (FK)
 
         public string? Salida { get; set; }  // nvarchar(15) (corregido)
+
+        public int? IdAdscripcion { get; set; }
+        public int? IdTipoBien { get; set; } // Representa el tipo de bien
+
     }
 }

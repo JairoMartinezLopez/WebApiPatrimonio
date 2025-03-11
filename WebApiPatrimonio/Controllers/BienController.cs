@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using WebApiPatrimonio.Context;
 using WebApiPatrimonio.Models;
@@ -32,7 +34,33 @@ namespace WebApiPatrimonio.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Bien>> GetBien(long id)
         {
-            var bien = await _context.PAT_BIENES.FindAsync(id);
+            var bien = await _context.PAT_BIENES.
+                Select(b => new Bien  // ⬅️ Solo selecciona las columnas existentes en la BD
+            {
+                IdBien = b.IdBien,
+                IdColor = b.IdColor,
+                FechaAlta = b.FechaAlta,
+                Aviso = b.Aviso,
+                Serie = b.Serie,
+                Modelo = b.Modelo,
+                IdEstadoFisico = b.IdEstadoFisico,
+                IdMarca = b.IdMarca,
+                Costo = b.Costo,
+                Etiquetado = b.Etiquetado,
+                FechaEtiquetado = b.FechaEtiquetado,
+                Estatus = b.Estatus,
+                FechaBaja = b.FechaBaja,
+                IdCausal = b.IdCausal,
+                IdDisposicion = b.IdDisposicion,
+                IdFactura = b.IdFactura,
+                NoInventario = b.NoInventario,
+                IdCatBien = b.IdCatBien,
+                Observaciones = b.Observaciones,
+                IdCategoria = b.IdCategoria,
+                IdFinanciamiento = b.IdFinanciamiento
+            })
+        .Where(b => b.IdBien == id)
+        .SingleOrDefaultAsync();
 
             if (bien == null)
             {
@@ -75,13 +103,63 @@ namespace WebApiPatrimonio.Controllers
 
         // POST: api/Bien
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Bien>> PostBien(Bien bien)
+        [HttpPost("Inserta un bien")]
+        public async Task<IActionResult> InsertarBien([FromBody] Bien bien)
         {
-            _context.PAT_BIENES.Add(bien);
-            await _context.SaveChangesAsync();
+            if (bien == null)
+            {
+                return BadRequest("Los datos del bien son requeridos.");
+            }
 
-            return CreatedAtAction("GetBien", new { id = bien.IdBien }, bien);
+            try
+            {
+                var idBienParam = new SqlParameter("@IdBien", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                await _context.Database.ExecuteSqlRawAsync(
+                    "EXEC PA_INS_PAT_BIENES @IdGeneral, @IdAreaSistemaUsuario, @IdPantalla, @IdBien OUT, " +
+                    "@idColor, @FechaAlta, @Aviso, @Serie, @Modelo, @idEstadoFisico, @idMarca, @Costo, " +
+                    "@Etiquetado, @FechaEtiquetado, @Estatus, @FechaBaja, @Causal, @idDisposicion, @IdFactura, " +
+                    "@NoInventario, @idTipoBien, @IdCatBien, @Observaciones, @IdCategoria, @IdFinanciamiento, " +
+                    "@IdAdscripcion, @Salida, @Cantidad",
+                    new SqlParameter("@IdGeneral", bien.IdAreaSistemaUsuario),
+                    new SqlParameter("@IdAreaSistemaUsuario", bien.IdAreaSistemaUsuario),
+                    new SqlParameter("@IdPantalla", bien.IdPantalla),
+                    idBienParam,
+                    new SqlParameter("@idColor", bien.IdColor ?? (object)DBNull.Value),
+                    new SqlParameter("@FechaAlta", bien.FechaAlta ?? (object)DBNull.Value),
+                    new SqlParameter("@Aviso", bien.Aviso ?? (object)DBNull.Value),
+                    new SqlParameter("@Serie", bien.Serie ?? (object)DBNull.Value),
+                    new SqlParameter("@Modelo", bien.Modelo ?? (object)DBNull.Value),
+                    new SqlParameter("@idEstadoFisico", bien.IdEstadoFisico ?? (object)DBNull.Value),
+                    new SqlParameter("@idMarca", bien.IdMarca ?? (object)DBNull.Value),
+                    new SqlParameter("@Costo", bien.Costo ?? (object)DBNull.Value),
+                    new SqlParameter("@Etiquetado", bien.Etiquetado ?? (object)DBNull.Value),
+                    new SqlParameter("@FechaEtiquetado", bien.FechaEtiquetado ?? (object)DBNull.Value),
+                    new SqlParameter("@Estatus", bien.Estatus ?? (object)DBNull.Value),
+                    new SqlParameter("@FechaBaja", bien.FechaBaja ?? (object)DBNull.Value),
+                    new SqlParameter("@Causal", bien.IdCausal ?? (object)DBNull.Value),
+                    new SqlParameter("@idDisposicion", bien.IdDisposicion ?? (object)DBNull.Value),
+                    new SqlParameter("@IdFactura", bien.IdFactura ?? (object)DBNull.Value),
+                    new SqlParameter("@NoInventario", bien.NoInventario ?? (object)DBNull.Value),
+                    new SqlParameter("@idTipoBien", bien.IdTipoBien ?? (object)DBNull.Value),
+                    new SqlParameter("@IdCatBien", bien.IdCatBien ?? (object)DBNull.Value),
+                    new SqlParameter("@Observaciones", bien.Observaciones ?? (object)DBNull.Value),
+                    new SqlParameter("@IdCategoria", bien.IdCategoria ?? (object)DBNull.Value),
+                    new SqlParameter("@IdFinanciamiento", bien.IdFinanciamiento ?? (object)DBNull.Value),
+                    new SqlParameter("@IdAdscripcion", bien.IdAdscripcion ?? (object)DBNull.Value),
+                    new SqlParameter("@Salida", bien.Salida ?? (object)DBNull.Value),
+                    new SqlParameter("@Cantidad", 1)
+                );
+
+                return Ok(new { Message = "Bien insertado correctamente", IdBien = idBienParam.Value });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno: {ex.Message}");
+            }
         }
 
         // DELETE: api/Bien/5
