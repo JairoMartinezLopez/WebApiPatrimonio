@@ -25,14 +25,14 @@ namespace WebApiPatrimonio.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Levantamiento>>> GetPAT_LEVANTAMIENTO_INVENTARIO()
         {
-            return await _context.PAT_LEVANTAMIENTO_INVENTARIO.ToListAsync();
+            return await _context.LEVANTAMIENTOSINVENTARIO.ToListAsync();
         }
 
         // GET: api/Levantamiento/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Levantamiento>> GetLevantamiento(long id)
         {
-            var levantamiento = await _context.PAT_LEVANTAMIENTO_INVENTARIO.FindAsync(id);
+            var levantamiento = await _context.LEVANTAMIENTOSINVENTARIO.FindAsync(id);
 
             if (levantamiento == null)
             {
@@ -78,7 +78,7 @@ namespace WebApiPatrimonio.Controllers
         [HttpPost]
         public async Task<ActionResult<Levantamiento>> PostLevantamiento(Levantamiento levantamiento)
         {
-            _context.PAT_LEVANTAMIENTO_INVENTARIO.Add(levantamiento);
+            _context.LEVANTAMIENTOSINVENTARIO.Add(levantamiento);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetLevantamiento", new { id = levantamiento.IdLevantamientoInventario }, levantamiento);
@@ -88,13 +88,13 @@ namespace WebApiPatrimonio.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLevantamiento(long id)
         {
-            var levantamiento = await _context.PAT_LEVANTAMIENTO_INVENTARIO.FindAsync(id);
+            var levantamiento = await _context.LEVANTAMIENTOSINVENTARIO.FindAsync(id);
             if (levantamiento == null)
             {
                 return NotFound();
             }
 
-            _context.PAT_LEVANTAMIENTO_INVENTARIO.Remove(levantamiento);
+            _context.LEVANTAMIENTOSINVENTARIO.Remove(levantamiento);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -102,7 +102,7 @@ namespace WebApiPatrimonio.Controllers
 
         private bool LevantamientoExists(long id)
         {
-            return _context.PAT_LEVANTAMIENTO_INVENTARIO.Any(e => e.IdLevantamientoInventario == id);
+            return _context.LEVANTAMIENTOSINVENTARIO.Any(e => e.IdLevantamientoInventario == id);
         }
     }
 }

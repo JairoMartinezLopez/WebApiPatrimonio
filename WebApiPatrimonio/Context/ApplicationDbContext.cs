@@ -7,7 +7,7 @@ namespace WebApiPatrimonio.Context
 {
     public class ApplicationDbContext: DbContext
     {
-        public DbSet<Bien> PAT_BIENES { get; set; }
+        public DbSet<Bien> BIENES { get; set; }
 
         public async Task<int> InsertarBienAsync(
             int idGeneral, int idAreaSistemaUsuario, int idPantalla, int idColor,
@@ -70,9 +70,9 @@ namespace WebApiPatrimonio.Context
             return idBien;
         }
 
-        public DbSet<Levantamiento> PAT_LEVANTAMIENTO_INVENTARIO { get; set; }
+        public DbSet<Levantamiento> LEVANTAMIENTOSINVENTARIO { get; set; }
 
-        public DbSet<ProgramaLevatamiento> PAT_EVENTOINVENTARIO { get; set; }
+        public DbSet<ProgramaLevatamiento> EVENTOSINVENTARIO { get; set; }
 
         public async Task<int> InsertarEventoInventario(
         int idGeneral, int idAreaSistemaUsuario, int idPantalla, DateTime fechaInicio,
@@ -105,5 +105,8 @@ namespace WebApiPatrimonio.Context
         : base(options)
         {
         }
+        public DbSet<UsuarioModel> USUARIOS { get; set; }
+
+        public DbSet<LoginRequest> LoginRequest { get; set; } = default!;
     }
 }

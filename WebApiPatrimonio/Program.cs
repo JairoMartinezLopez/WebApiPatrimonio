@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using WebApiPatrimonio.Context;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using WebApiPatrimonio.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +29,26 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateLifetime = true
+        };
+    });
+
 var app = builder.Build();
 app.UseCors("CorsPolicy");
 
@@ -36,7 +60,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+
+
 app.UseAuthorization();
+
+app.UseMiddleware<JwtMiddleware>();
+
 
 app.MapControllers();
 

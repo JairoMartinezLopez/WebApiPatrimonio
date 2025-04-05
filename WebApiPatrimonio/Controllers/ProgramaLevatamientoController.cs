@@ -25,14 +25,14 @@ namespace WebApiPatrimonio.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProgramaLevatamiento>>> GetPAT_EVENTOINVENTARIO()
         {
-            return await _context.PAT_EVENTOINVENTARIO.ToListAsync();
+            return await _context.EVENTOSINVENTARIO.ToListAsync();
         }
 
         // GET: api/ProgramaLevatamiento/5
         [HttpGet("{id}")]
         public async Task<ActionResult<ProgramaLevatamiento>> GetProgramaLevatamiento(int id)
         {
-            var programaLevatamiento = await _context.PAT_EVENTOINVENTARIO.FindAsync(id);
+            var programaLevatamiento = await _context.EVENTOSINVENTARIO.FindAsync(id);
 
             if (programaLevatamiento == null)
             {
@@ -92,13 +92,13 @@ namespace WebApiPatrimonio.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProgramaLevatamiento(int id)
         {
-            var programaLevatamiento = await _context.PAT_EVENTOINVENTARIO.FindAsync(id);
+            var programaLevatamiento = await _context.EVENTOSINVENTARIO.FindAsync(id);
             if (programaLevatamiento == null)
             {
                 return NotFound();
             }
 
-            _context.PAT_EVENTOINVENTARIO.Remove(programaLevatamiento);
+            _context.EVENTOSINVENTARIO.Remove(programaLevatamiento);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -106,7 +106,7 @@ namespace WebApiPatrimonio.Controllers
 
         private bool ProgramaLevatamientoExists(int id)
         {
-            return _context.PAT_EVENTOINVENTARIO.Any(e => e.IdEventoInventario == id);
+            return _context.EVENTOSINVENTARIO.Any(e => e.IdEventoInventario == id);
         }
     }
 }

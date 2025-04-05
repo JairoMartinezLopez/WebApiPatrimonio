@@ -27,14 +27,14 @@ namespace WebApiPatrimonio.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Bien>>> GetPAT_BIENES()
         {
-            return await _context.PAT_BIENES.ToListAsync();
+            return await _context.BIENES.ToListAsync();
         }
 
         // GET: api/Bien/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Bien>> GetBien(long id)
         {
-            var bien = await _context.PAT_BIENES.
+            var bien = await _context.BIENES.
                 Select(b => new Bien  // ⬅️ Solo selecciona las columnas existentes en la BD
             {
                 IdBien = b.IdBien,
@@ -166,13 +166,13 @@ namespace WebApiPatrimonio.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBien(long id)
         {
-            var bien = await _context.PAT_BIENES.FindAsync(id);
+            var bien = await _context.BIENES.FindAsync(id);
             if (bien == null)
             {
                 return NotFound();
             }
 
-            _context.PAT_BIENES.Remove(bien);
+            _context.BIENES.Remove(bien);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -180,7 +180,7 @@ namespace WebApiPatrimonio.Controllers
 
         private bool BienExists(long id)
         {
-            return _context.PAT_BIENES.Any(e => e.IdBien == id);
+            return _context.BIENES.Any(e => e.IdBien == id);
         }
     }
 }
