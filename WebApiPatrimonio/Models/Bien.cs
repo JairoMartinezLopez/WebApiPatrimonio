@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WebApiPatrimonio.Models
 {
-    [Table("PAT_BIENES")]
+    [Table("BIENES")]
     public class Bien
     {
         [Key]
