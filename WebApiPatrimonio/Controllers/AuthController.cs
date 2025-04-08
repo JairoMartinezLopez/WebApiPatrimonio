@@ -31,16 +31,19 @@ namespace WebApiPatrimonio.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             if (request == null || request.Usuario <= 0 || string.IsNullOrEmpty(request.Password))
-                return BadRequest("Usuario y contraseña son requeridos");
+                return BadRequest(new { mensaje = "Usuario y contraseña son requeridos" });
+
 
             // Obtener el usuario de la BD
             var usuario = await _context.USUARIOS.FirstOrDefaultAsync(u => u.idGeneral == request.Usuario);
             if (usuario == null)
-                return Unauthorized("Usuario o contraseña incorrectos");
+                return Unauthorized(new { mensaje = "Usuario y/o contraseña incorrectos" });
+
 
             // Verificar la contraseña cifrada con HASHBYTES
             if (!VerificarPassword(request.Password, usuario.Password))
-                return Unauthorized("Usuario o contraseña incorrectos");
+                return BadRequest(new { mensaje = "Usuario y/o contraseña incorrectos" });
+
 
             // Generar token JWT
             var token = GenerarToken(usuario);
