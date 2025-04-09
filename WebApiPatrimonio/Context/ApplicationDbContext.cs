@@ -106,6 +106,7 @@ namespace WebApiPatrimonio.Context
         {
         }
         public DbSet<UsuarioModel> USUARIOS { get; set; }
+        public DbSet<UsuarioRequest> UsuariosRequest { get; set; }
 
         public DbSet<LoginRequest> LoginRequest { get; set; } = default!;
     }

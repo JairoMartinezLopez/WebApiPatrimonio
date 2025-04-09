@@ -25,7 +25,7 @@ namespace WebApiPatrimonio.Controllers
 
         // GET: api/Bien
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Bien>>> GetPAT_BIENES()
+        public async Task<ActionResult<IEnumerable<Bien>>> Get_BIENES()
         {
             return await _context.BIENES.ToListAsync();
         }

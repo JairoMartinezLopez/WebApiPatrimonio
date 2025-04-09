@@ -23,7 +23,7 @@ namespace WebApiPatrimonio.Controllers
 
         // GET: api/ProgramaLevatamiento
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProgramaLevatamiento>>> GetPAT_EVENTOINVENTARIO()
+        public async Task<ActionResult<IEnumerable<ProgramaLevatamiento>>> GetEVENTOSINVENTARIO()
         {
             return await _context.EVENTOSINVENTARIO.ToListAsync();
         }

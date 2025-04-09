@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WebApiPatrimonio.Models
 {
-    [Table("PAT_EVENTOINVENTARIO", Schema = "dbo")] // Especifica el nombre de la tabla y el esquema
+    [Table("EVENTOSINVENTARIO", Schema = "dbo")] // Especifica el nombre de la tabla y el esquema
     public class ProgramaLevatamiento
     {
         [Key]
-        [Column("IdEventoInventario")]
+        [Column("idEventoInventario")]
         public int IdEventoInventario { get; set; }
 
         [Column("FechaInicio")]
@@ -27,5 +27,8 @@ namespace WebApiPatrimonio.Models
 
         [Column("Activo")]
         public bool? Activo { get; set; }
+
+        [Column("Folio")]
+        public bool? Folio { get; set; }
     }
 }
