@@ -30,11 +30,11 @@ namespace WebApiPatrimonio.Controllers
             var usuarios = await _context.USUARIOS
                 .Select(u => new UsuarioModel
                 {
-                    idUsuarios = u.idUsuarios,
+                    idUsuario = u.idUsuario,
                     Nombre = u.Nombre,
                     Apellidos = u.Apellidos,
                     idGeneral = u.idGeneral,
-                    Rol = u.Rol,
+                    idRol = u.idRol,
                     Activo = u.Activo,
                     Bloqueado = u.Bloqueado
                 })
@@ -43,24 +43,37 @@ namespace WebApiPatrimonio.Controllers
         }
 
         // GET: api/Usuarios/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<UsuarioRequest>> GetUsuarioRequest(int id)
+        [HttpGet("{idUsuario}")]
+        public async Task<ActionResult<UsuarioModel>> GetUsuarioRequest(int idUsuario)
         {
-            var usuarioRequest = await _context.UsuariosRequest.FindAsync(id);
+            var usuario = await _context.USUARIOS
+                .Where(u => u.idUsuario == idUsuario)
+                .Select(u => new UsuarioModel
+                {
+                    idUsuario = u.idUsuario,
+                    Nombre = u.Nombre,
+                    Apellidos = u.Apellidos,
+                    idGeneral = u.idGeneral,
+                    idRol = u.idRol,
+                    Activo = u.Activo,
+                    Bloqueado = u.Bloqueado
+                })
+                .FirstOrDefaultAsync();
 
-            if (usuarioRequest == null)
+            if (usuario == null)
             {
                 return NotFound();
             }
 
-            return usuarioRequest;
+            return Ok(usuario);
         }
 
+
         [HttpGet("filtrar")]
-        public async Task<ActionResult<IEnumerable<UsuarioRequest>>> FiltrarUsuarios(
+        public async Task<ActionResult<IEnumerable<UsuarioModel>>> FiltrarUsuarios(
             [FromQuery] string? nombre,
             [FromQuery] int? idGeneral,
-            [FromQuery] string? rol,
+            [FromQuery] int? idRol,
             [FromQuery] bool? activo,
             [FromQuery] bool? bloqueado)
         {
@@ -72,8 +85,8 @@ namespace WebApiPatrimonio.Controllers
             if (idGeneral.HasValue)
                 query = query.Where(u => u.idGeneral == idGeneral);
 
-            if (!string.IsNullOrEmpty(rol))
-                query = query.Where(u => u.Rol == rol);
+            if (idRol.HasValue)
+                query = query.Where(u => u.idRol == idRol);
 
             if (activo.HasValue)
                 query = query.Where(u => u.Activo == activo);
@@ -82,13 +95,13 @@ namespace WebApiPatrimonio.Controllers
                 query = query.Where(u => u.Bloqueado == bloqueado);
 
             var usuarios = await query
-                .Select(u => new UsuarioRequest
+                .Select(u => new UsuarioModel
                 {
-                    idUsuarios = u.idUsuarios,
+                    idUsuario = u.idUsuario,
                     Nombre = u.Nombre,
                     Apellidos = u.Apellidos,
                     idGeneral = u.idGeneral,
-                    Rol = u.Rol,
+                    idRol = u.idRol,
                     Activo = u.Activo,
                     Bloqueado = u.Bloqueado
                 })
@@ -103,14 +116,21 @@ namespace WebApiPatrimonio.Controllers
         [HttpPut("modificar")]
         public async Task<IActionResult> ModificarUsuario([FromBody] UsuarioRequest request)
         {
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandText = "PA_UPD_USUARIOS";
             command.CommandType = CommandType.StoredProcedure;
 
-            command.Parameters.Add(new SqlParameter("@idUsuarios", request.idUsuarios));
-            command.Parameters.Add(new SqlParameter("@IdPantalla", request.idPantalla));
-            command.Parameters.Add(new SqlParameter("@idGeneral", request.idGeneral));
-            command.Parameters.Add(new SqlParameter("@Rol", request.Rol));
+            command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
+            command.Parameters.Add(new SqlParameter("@idGeneral", 1)); //loggedInUserId));
+            command.Parameters.Add(new SqlParameter("@idRol", request.idRol));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
             command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));
 
@@ -137,17 +157,24 @@ namespace WebApiPatrimonio.Controllers
         [HttpPost("Agregar Usuario")]
         public async Task<IActionResult> InsertarUsuario([FromBody] UsuarioRequest request)
         {
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandText = "PA_INS_USUARIOS";
             command.CommandType = CommandType.StoredProcedure;
 
-            command.Parameters.Add(new SqlParameter("@idUsuarios", request.idUsuarios));
-            command.Parameters.Add(new SqlParameter("@IdPantalla", request.idPantalla));
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
+            command.Parameters.Add(new SqlParameter("@IdGeneralUsuario", 1));//loggedInUserId));
             command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
             command.Parameters.Add(new SqlParameter("@Apellidos", request.Apellidos));
             command.Parameters.Add(new SqlParameter("@Password", request.Password));
             command.Parameters.Add(new SqlParameter("@idGeneral", request.idGeneral));
-            command.Parameters.Add(new SqlParameter("@Rol", request.Rol));
+            command.Parameters.Add(new SqlParameter("@idRol", request.idRol));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
             command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));
 
@@ -172,13 +199,20 @@ namespace WebApiPatrimonio.Controllers
         [HttpDelete]
         public async Task<IActionResult> EliminarUsuario([FromBody] UsuarioRequest request)
         {
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandText = "PA_DEL_USUARIO";
             command.CommandType = CommandType.StoredProcedure;
 
-            command.Parameters.Add(new SqlParameter("@idUsuarios", request.idUsuarios));
-            command.Parameters.Add(new SqlParameter("@IdPantalla", request.idPantalla));
-            command.Parameters.Add(new SqlParameter("@idGeneral", request.idGeneral));
+            command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
+            command.Parameters.Add(new SqlParameter("@idGeneral", 1));//loggedInUserId));
 
             try
             {
@@ -200,7 +234,7 @@ namespace WebApiPatrimonio.Controllers
 
         private bool UsuarioRequestExists(int id)
         {
-            return _context.UsuariosRequest.Any(e => e.idUsuarios == id);
+            return _context.UsuariosRequest.Any(e => e.idUsuario == id);
         }
     }
 }

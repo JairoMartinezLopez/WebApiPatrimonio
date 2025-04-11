@@ -12,25 +12,25 @@ namespace WebApiPatrimonio.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProgramaLevatamientoController : ControllerBase
+    public class ProgramarEventosController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
 
-        public ProgramaLevatamientoController(ApplicationDbContext context)
+        public ProgramarEventosController(ApplicationDbContext context)
         {
             _context = context;
         }
 
         // GET: api/ProgramaLevatamiento
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProgramaLevatamiento>>> GetEVENTOSINVENTARIO()
+        public async Task<ActionResult<IEnumerable<ProgramarEventos>>> GetEVENTOSINVENTARIO()
         {
             return await _context.EVENTOSINVENTARIO.ToListAsync();
         }
 
         // GET: api/ProgramaLevatamiento/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProgramaLevatamiento>> GetProgramaLevatamiento(int id)
+        public async Task<ActionResult<ProgramarEventos>> GetProgramaLevatamiento(int id)
         {
             var programaLevatamiento = await _context.EVENTOSINVENTARIO.FindAsync(id);
 
@@ -45,7 +45,7 @@ namespace WebApiPatrimonio.Controllers
         // PUT: api/ProgramaLevatamiento/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProgramaLevatamiento(int id, ProgramaLevatamiento programaLevatamiento)
+        public async Task<IActionResult> PutProgramaLevatamiento(int id, ProgramarEventos programaLevatamiento)
         {
             if (id != programaLevatamiento.IdEventoInventario)
             {

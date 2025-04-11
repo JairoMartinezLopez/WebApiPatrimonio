@@ -1,13 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using WebApiPatrimonio.Context;
 using WebApiPatrimonio.Models;
 
@@ -18,7 +16,7 @@ namespace WebApiPatrimonio.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly IConfiguration _configuration; // Para leer claves del appsettings.json
+        private readonly IConfiguration _configuration;
 
         public AuthController(ApplicationDbContext context, IConfiguration configuration)
         {
@@ -26,59 +24,77 @@ namespace WebApiPatrimonio.Controllers
             _configuration = configuration;
         }
 
-        // POST: api/auth/login
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             if (request == null || request.Usuario <= 0 || string.IsNullOrEmpty(request.Password))
                 return BadRequest(new { mensaje = "Usuario y contraseña son requeridos" });
 
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandText = "PA_LOGIN_USUARIO";
+            command.CommandType = CommandType.StoredProcedure;
 
-            // Obtener el usuario de la BD
-            var usuario = await _context.USUARIOS.FirstOrDefaultAsync(u => u.idGeneral == request.Usuario);
-            if (usuario == null)
-                return Unauthorized(new { mensaje = "Usuario y/o contraseña incorrectos" });
+            command.Parameters.Add(new SqlParameter("@Usuario", request.Usuario));
+            command.Parameters.Add(new SqlParameter("@Password", request.Password));
 
-
-            // Verificar la contraseña cifrada con HASHBYTES
-            if (!VerificarPassword(request.Password, usuario.Password))
-                return BadRequest(new { mensaje = "Usuario y/o contraseña incorrectos" });
-
-
-            // Generar token JWT
-            var token = GenerarToken(usuario);
-
-            // Devolver los datos esenciales del usuario
-            return Ok(new
+            try
             {
-                token,
-                usuario.idUsuarios,
-                usuario.Nombre,
-                usuario.Apellidos,
-                usuario.idGeneral,
-                usuario.Rol,
-                usuario.Activo
-            });
-        }
+                await _context.Database.OpenConnectionAsync();
 
-        // Método para verificar la contraseña cifrada con HASHBYTES
-        private bool VerificarPassword(string passwordIngresado, byte[] passwordAlmacenado)
-        {
-            using (SHA256 sha256 = SHA256.Create())
+                using var reader = await command.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    int resultado = Convert.ToInt32(reader["Resultado"]);
+                    string mensaje = reader["Mensaje"].ToString();
+
+                    if (resultado == 0)
+                        return Unauthorized(new { mensaje });
+
+                    // Extraer datos del usuario desde el SP
+                    var idUsuario = Convert.ToInt32(reader["idUsuario"]);
+                    var nombre = reader["Nombre"].ToString();
+                    var apellidos = reader["Apellidos"].ToString();
+                    var idGeneral = Convert.ToInt32(reader["idGeneral"]);
+                    var idRol = Convert.ToInt32(reader["idRol"]);
+                    var rolNombre = reader["RolNombre"].ToString();
+                    var activo = Convert.ToBoolean(reader["Activo"]);
+
+                    // Generar token JWT
+                    var token = GenerarToken(idGeneral, nombre, rolNombre);
+
+                    return Ok(new
+                    {
+                        token,
+                        idUsuario,
+                        nombre,
+                        apellidos,
+                        idGeneral,
+                        idRol,
+                        rolNombre,
+                        activo
+                    });
+                }
+
+                return Unauthorized(new { mensaje = "No se pudo procesar el login" });
+            }
+            catch (SqlException ex)
             {
-                byte[] passwordIngresadoHash = sha256.ComputeHash(Encoding.UTF8.GetBytes(passwordIngresado));
-                return passwordAlmacenado.SequenceEqual(passwordIngresadoHash);
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
             }
         }
 
-        // Método para generar el token JWT
-        private string GenerarToken(UsuarioModel usuario)
+
+        private string GenerarToken(int idGeneral, string nombre, string rol)
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, usuario.idGeneral.ToString()),
-                new Claim(ClaimTypes.Name, usuario.Nombre),
-                new Claim(ClaimTypes.Role, usuario.Rol)
+                new Claim(ClaimTypes.NameIdentifier, idGeneral.ToString()),
+                new Claim(ClaimTypes.Name, nombre),
+                new Claim(ClaimTypes.Role, rol)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));

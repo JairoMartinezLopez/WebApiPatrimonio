@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace WebApiPatrimonio.Models
 {
     [Table("EVENTOSINVENTARIO", Schema = "dbo")] // Especifica el nombre de la tabla y el esquema
-    public class ProgramaLevatamiento
+    public class ProgramarEventos
     {
         [Key]
         [Column("idEventoInventario")]
