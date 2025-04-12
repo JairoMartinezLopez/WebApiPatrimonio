@@ -101,6 +101,8 @@ namespace WebApiPatrimonio.Context
             return (int)idEventoInventarioParam.Value;
         }
         public DbSet<Roles> ROLES { get; set; }
+        public DbSet<Modulo> MODULOS { get; set; }
+        public DbSet<Accion> ACCIONES { get; set; }
         public DbSet<UsuarioModel> USUARIOS { get; set; }
         public DbSet<UsuarioRequest> UsuariosRequest { get; set; }
 
