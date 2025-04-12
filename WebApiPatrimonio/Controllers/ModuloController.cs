@@ -58,10 +58,10 @@ namespace WebApiPatrimonio.Controllers
                 query = query.Where(u => u.Nombre.Contains(nombre));
 
             if (!string.IsNullOrEmpty(descripcion))
-                query = query.Where(u => u.Nombre.Contains(descripcion));
+                query = query.Where(u => u.Descripcion.Contains(descripcion));
 
             if (!string.IsNullOrEmpty(clave))
-                query = query.Where(u => u.Nombre.Contains(clave));
+                query = query.Where(u => u.Clave.Contains(clave));
 
             if (bloqueado.HasValue)
                 query = query.Where(u => u.Bloqueado == bloqueado);

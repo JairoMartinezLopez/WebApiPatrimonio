@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -14,76 +15,71 @@ namespace WebApiPatrimonio.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AccionController : ControllerBase
+    public class UsuariosPermisosController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
 
-        public AccionController(ApplicationDbContext context)
+        public UsuariosPermisosController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // GET: api/Accion
+        // GET: api/UsuariosPermisos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Accion>>> GetACCIONES()
+        public async Task<ActionResult<IEnumerable<UsuariosPermiso>>> GetUsuariosPermisos()
         {
-            return await _context.ACCIONES.ToListAsync();
+            return await _context.UsuariosPermisos.ToListAsync();
         }
 
-        // GET: api/Accion/5
+        // GET: api/UsuariosPermisos/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Accion>> GetAccion(int id)
+        public async Task<ActionResult<UsuariosPermiso>> GetUsuariosPermiso(int id)
         {
-            var accion = await _context.ACCIONES.FindAsync(id);
+            var usuariosPermiso = await _context.UsuariosPermisos.FindAsync(id);
 
-            if (accion == null)
+            if (usuariosPermiso == null)
             {
                 return NotFound();
             }
 
-            return accion;
+            return usuariosPermiso;
         }
 
         [HttpGet("filtar")]
-        public async Task<ActionResult<IEnumerable<Accion>>> filtrarAcciones(
-            [FromQuery] string? nombre,
-            [FromQuery] string? descripcion,
-            [FromQuery] string? clave,
-            [FromQuery] bool? bloqueado)
+        public async Task<ActionResult<IEnumerable<UsuariosPermiso>>> filtrarPermisos(
+            [FromQuery] int? usuario,
+            [FromQuery] int? permiso,
+            [FromQuery] bool? otorgado)
         {
-            var query = _context.ACCIONES.AsQueryable();
+            var query = _context.UsuariosPermisos.AsQueryable();
 
-            if (!string.IsNullOrEmpty(nombre))
-                query = query.Where(u => u.Nombre.Contains(nombre));
+            if (usuario.HasValue)
+                query = query.Where(u => u.idUsuario == usuario);
 
-            if (!string.IsNullOrEmpty(descripcion))
-                query = query.Where(u => u.Descripcion.Contains(descripcion));
+            if (permiso.HasValue)
+                query = query.Where(u => u.idPermiso == permiso);
 
-            if (!string.IsNullOrEmpty(clave))
-                query = query.Where(u => u.Clave.Contains(clave));
+            if (otorgado.HasValue)
+                query = query.Where(u => u.Otorgado == otorgado);
 
-            if (bloqueado.HasValue)
-                query = query.Where(u => u.Bloqueado == bloqueado);
-
-            var acciones = await query
-                .Select(u => new Accion
+            var Usuariospermisos = await query
+                .Select(u => new UsuariosPermiso
                 {
-                    idAccion = u.idAccion,
-                    Clave = u.Clave,
-                    Nombre = u.Nombre,
-                    Descripcion = u.Descripcion,
-                    Activo = u.Activo,
-                    Bloqueado = u.Bloqueado
+                    idUsuarioPermiso = u.idPermiso,
+                    idUsuario = u.idUsuario,
+                    idPermiso = u.idPermiso,
+                    Otorgado = u.Otorgado,
+                    FechaOtorgamiento = u.FechaOtorgamiento
                 })
                 .ToListAsync();
 
-            return Ok(acciones);
+            return Ok(Usuariospermisos);
         }
 
-        // PUT: api/Accion/5
+        // PUT: api/UsuariosPermisos/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("modificar")]
-        public async Task<IActionResult> PutAccion([FromBody] Accion request)
+        [HttpPut("Modificar")]
+        public async Task<IActionResult> PutUsuariosPermiso(UsuariosPermiso request)
         {
             // Obtener el ID del usuario autenticado
             /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
@@ -94,22 +90,20 @@ namespace WebApiPatrimonio.Controllers
 
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandText = "PA_UPD_ACCIONES";
+            command.CommandText = "PA_ModificarPermisoUsuario";
 
-            command.Parameters.Add(new SqlParameter("@idAccion", request.idAccion));
+            command.Parameters.Add(new SqlParameter("@idUsuarioPermiso", request.idUsuarioPermiso));
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
-            command.Parameters.Add(new SqlParameter("@IdGeneral", 1));//loggedInUserId)); // Usar el ID del usuario autenticado
-            command.Parameters.Add(new SqlParameter("@Clave", request.Clave ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
-            command.Parameters.Add(new SqlParameter("@Descripcion", request.Descripcion ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
-            command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 11));//loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
+            command.Parameters.Add(new SqlParameter("@idPermiso", request.idPermiso));
+            command.Parameters.Add(new SqlParameter("@Otorgado", request.Otorgado));
 
             try
             {
                 await _context.Database.OpenConnectionAsync();
                 await command.ExecuteNonQueryAsync();
-                return Ok(new { mensaje = "La acción modificada correctamente." });
+                return Ok(new { mensaje = "Permiso del usuario modificado correctamente." });
             }
             catch (SqlException ex)
             {
@@ -121,10 +115,10 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-        // POST: api/Accion
+        // POST: api/UsuariosPermisos
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Accion>> PostAccion(Accion request)
+        public async Task<ActionResult<UsuariosPermiso>> PostUsuariosPermiso(UsuariosPermiso request)
         {
             // Obtener el ID del usuario autenticado
             /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
@@ -135,21 +129,19 @@ namespace WebApiPatrimonio.Controllers
 
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandType = System.Data.CommandType.StoredProcedure;
-            command.CommandText = "PA_INS_ACCIONES";
+            command.CommandText = "PA_OtorgarPermisoUsuario";
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
-            command.Parameters.Add(new SqlParameter("@IdGeneral", 1));//loggedInUserId));
-            command.Parameters.Add(new SqlParameter("@Clave", request.Clave));
-            command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
-            command.Parameters.Add(new SqlParameter("@Descripcion", request.Descripcion));
-            command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
-            command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 11));//loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
+            command.Parameters.Add(new SqlParameter("@idPermiso", request.idPermiso));
+            command.Parameters.Add(new SqlParameter("@Otorgado", request.Otorgado));
 
             try
             {
                 await _context.Database.OpenConnectionAsync();
                 await command.ExecuteNonQueryAsync();
-                return Ok(new { mensaje = "Acción insertada correctamente." });
+                return Ok(new { mensaje = "Permiso agregado al usuario correctamente." });
             }
             catch (SqlException ex)
             {
@@ -161,9 +153,9 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-        // DELETE: api/Accion/5
-        [HttpDelete("{idAccion}")]
-        public async Task<IActionResult> DeleteAccion(int idAccion)
+        // DELETE: api/UsuariosPermisos/5
+        [HttpDelete("{idUsuarioPermiso}")]
+        public async Task<IActionResult> DeleteUsuariosPermiso(int idUsuarioPermiso)
         {
             // Obtener el ID del usuario autenticado
             /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
@@ -172,19 +164,19 @@ namespace WebApiPatrimonio.Controllers
                 return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
             }*/
 
-            var sql = "EXEC PA_DEL_ACCIONES @idAccion, @IdPantalla, @IdGeneral";
+            var sql = "EXEC PA_RevocarPermisoUsuario @idUsuarioPermiso, @IdPantalla, @IdGeneral";
             var result = await _context.Database.ExecuteSqlRawAsync(sql,
-                new SqlParameter("@idAccion", idAccion),
+                new SqlParameter("@idUsuarioPermiso", idUsuarioPermiso),
                 new SqlParameter("@IdPantalla", 1),
                 new SqlParameter("@IdGeneral", 1) //loggedInUserId));
             );
 
-            return Ok(new { mensaje = "Acción eliminada lógicamente." });
+            return Ok(new { mensaje = "Permiso del usuario eliminado." });
         }
 
-        private bool AccionExists(int id)
+        private bool UsuariosPermisoExists(int id)
         {
-            return _context.ACCIONES.Any(e => e.idAccion == id);
+            return _context.UsuariosPermisos.Any(e => e.idUsuarioPermiso == id);
         }
     }
 }
