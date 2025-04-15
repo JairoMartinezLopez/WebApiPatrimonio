@@ -25,7 +25,7 @@ namespace WebApiPatrimonio.Controllers
 
         // GET: api/Usuarios
         [HttpGet("Obtener todo")]
-        public async Task<ActionResult<IEnumerable<UsuarioRequest>>> GetUsuarios()
+        public async Task<ActionResult<IEnumerable<UsuarioModel>>> GetUsuarios()
         {
             var usuarios = await _context.USUARIOS
                 .Select(u => new UsuarioModel
@@ -114,7 +114,7 @@ namespace WebApiPatrimonio.Controllers
         // PUT: api/Usuarios/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("modificar")]
-        public async Task<IActionResult> ModificarUsuario([FromBody] UsuarioRequest request)
+        public async Task<IActionResult> ModificarUsuario([FromBody] UsuarioModel request)
         {
             // Obtener el ID del usuario autenticado
             /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
@@ -155,7 +155,7 @@ namespace WebApiPatrimonio.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 
         [HttpPost("Agregar Usuario")]
-        public async Task<IActionResult> InsertarUsuario([FromBody] UsuarioRequest request)
+        public async Task<IActionResult> InsertarUsuario([FromBody] UsuarioModel request)
         {
             // Obtener el ID del usuario autenticado
             /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
@@ -197,7 +197,7 @@ namespace WebApiPatrimonio.Controllers
 
         // DELETE: api/Usuarios/5
         [HttpDelete]
-        public async Task<IActionResult> EliminarUsuario([FromBody] UsuarioRequest request)
+        public async Task<IActionResult> EliminarUsuario([FromBody] UsuarioModel request)
         {
             // Obtener el ID del usuario autenticado
             /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
