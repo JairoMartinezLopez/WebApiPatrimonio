@@ -106,7 +106,7 @@ namespace WebApiPatrimonio.Context
         public DbSet<UsuarioModel> USUARIOS { get; set; }
         public DbSet<Permiso> PERMISOS { get; set; }
         public DbSet<UsuariosPermiso> UsuariosPermisos { get; set; }
-        public DbSet<UsuarioRequest> UsuariosRequest { get; set; }
+        public DbSet<CambiarPassword> CambiarPasswordRequest { get; set; }
 
         public DbSet<LoginRequest> LoginRequest { get; set; } = default!;
 

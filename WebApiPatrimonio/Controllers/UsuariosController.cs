@@ -231,10 +231,84 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-
-        private bool UsuarioRequestExists(int id)
+        [HttpPut("ResetPasswordSP/{idUsuario}")]
+        public async Task<IActionResult> ResetPasswordSP(int idUsuario)
         {
-            return _context.UsuariosRequest.Any(e => e.idUsuario == id);
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+            var nuevaPassword = GenerarContraseña();
+
+            var parametros = new[]
+            {
+                new SqlParameter("@idUsuario", idUsuario),
+                new SqlParameter("@NuevaPassword", nuevaPassword),
+                new SqlParameter("@IdGeneral", 1), //loggedInUserId));
+                new SqlParameter("@IdPantalla", 1)
+            };
+
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync("EXEC PA_RESET_PASSWORD_USUARIO @idUsuario, @NuevaPassword, @IdGeneral, @IdPantalla", parametros);
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { mensaje = ex.Message });
+            }
+
+            return Ok(new
+            {
+                Mensaje = "Contraseña restablecida exitosamente.",
+                UsuarioId = idUsuario,
+                NuevaContraseña = nuevaPassword
+            });
+        }
+
+        private string GenerarContraseña(int longitud = 10)
+        {
+            const string caracteres = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%&";
+            var random = new Random();
+            return new string(Enumerable.Repeat(caracteres, longitud)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        [HttpPut("CambiarPassword")]
+        public async Task<IActionResult> CambiarPassword([FromBody] CambiarPassword request)
+        {
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+            var parametros = new[]
+            {
+                new SqlParameter("@idUsuario", request.Usuario),
+                new SqlParameter("@PasswordActual", request.PasswordActual),
+                new SqlParameter("@NuevaPassword", request.NuevaPassword),
+                new SqlParameter("@IdGeneral", 1), //loggedInUserId));
+                new SqlParameter("@IdPantalla", 1)
+            };
+
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync("EXEC PA_CAMBIAR_PASSWORD_USUARIO @idUsuario, @PasswordActual, @NuevaPassword, @IdGeneral, @IdPantalla", parametros);
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { mensaje = ex.Message });
+            }
+
+            return Ok(new { mensaje = "Contraseña actualizada correctamente." });
+        }
+
+
+        private bool USUARIOSExists(int id)
+        {
+            return _context.USUARIOS.Any(e => e.idUsuario == id);
         }
     }
 }
