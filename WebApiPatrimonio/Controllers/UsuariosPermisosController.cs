@@ -168,8 +168,7 @@ namespace WebApiPatrimonio.Controllers
             var result = await _context.Database.ExecuteSqlRawAsync(sql,
                 new SqlParameter("@idUsuarioPermiso", idUsuarioPermiso),
                 new SqlParameter("@IdPantalla", 1),
-                new SqlParameter("@IdGeneral", 1), //loggedInUserId));
-                new SqlParameter("@Activo", 0)
+                new SqlParameter("@IdGeneral", 1) //loggedInUserId));
             );
 
             return Ok(new { mensaje = "Permiso del usuario eliminado." });
