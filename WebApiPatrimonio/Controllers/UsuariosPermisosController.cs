@@ -65,7 +65,7 @@ namespace WebApiPatrimonio.Controllers
             var Usuariospermisos = await query
                 .Select(u => new UsuariosPermiso
                 {
-                    idUsuarioPermiso = u.idPermiso,
+                    idUsuarioPermiso = u.idUsuarioPermiso,
                     idUsuario = u.idUsuario,
                     idPermiso = u.idPermiso,
                     Otorgado = u.Otorgado,
