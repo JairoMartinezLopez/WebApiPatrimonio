@@ -130,6 +130,8 @@ namespace WebApiPatrimonio.Controllers
             command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
             command.Parameters.Add(new SqlParameter("@idGeneral", 1)); //loggedInUserId));
+            command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
+            command.Parameters.Add(new SqlParameter("@Apellidos", request.Apellidos));
             command.Parameters.Add(new SqlParameter("@idRol", request.idRol));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
             command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));

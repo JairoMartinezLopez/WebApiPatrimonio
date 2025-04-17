@@ -63,7 +63,7 @@ namespace WebApiPatrimonio.Controllers
             if (!string.IsNullOrEmpty(clave))
                 query = query.Where(u => u.Clave.Contains(clave));
 
-            if (bloqueado.HasValue)
+            if (activo.HasValue)
                 query = query.Where(u => u.Activo == activo);
 
             if (bloqueado.HasValue)
