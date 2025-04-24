@@ -107,8 +107,14 @@ namespace WebApiPatrimonio.Context
         public DbSet<Permiso> PERMISOS { get; set; }
         public DbSet<UsuariosPermiso> UsuariosPermisos { get; set; }
         public DbSet<CambiarPassword> CambiarPasswordRequest { get; set; }
-
         public DbSet<LoginRequest> LoginRequest { get; set; } = default!;
+
+        public DbSet<Color> COLORES { get; set; }
+        public DbSet<EstadosFisicos> EstadosFisicos { get; set; }
+        public DbSet<Marca> MARCAS { get; set; }
+        public DbSet<CausalBajas> CausalBajas { get; set; }
+        public DbSet<DisposicionFinal> DISPOSICIONESFINALES { get; set; }
+        public DbSet<TipoBien> TIPOSBIENES {  get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
