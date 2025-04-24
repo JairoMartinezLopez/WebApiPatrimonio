@@ -115,6 +115,7 @@ namespace WebApiPatrimonio.Context
         public DbSet<CausalBajas> CausalBajas { get; set; }
         public DbSet<DisposicionFinal> DISPOSICIONESFINALES { get; set; }
         public DbSet<TipoBien> TIPOSBIENES {  get; set; }
+        public DbSet<CatBien> CatalogoBienes { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
