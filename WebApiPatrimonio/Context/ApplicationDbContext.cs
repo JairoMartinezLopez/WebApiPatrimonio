@@ -116,7 +116,9 @@ namespace WebApiPatrimonio.Context
         public DbSet<DisposicionFinal> DISPOSICIONESFINALES { get; set; }
         public DbSet<TipoBien> TIPOSBIENES {  get; set; }
         public DbSet<CatBien> CatalogoBienes { get; set; }
-
+        public DbSet<Financiamiento> FINANCIAMIENTOS { get; set; }
+        public DbSet<CatEstados> CATESADOS { get; set; }
+        public DbSet<Factura> FACTURAS { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
         {
