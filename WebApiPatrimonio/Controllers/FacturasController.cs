@@ -120,6 +120,7 @@ namespace WebApiPatrimonio.Controllers
             command.Parameters.Add(new SqlParameter("@Nota", request.Nota ?? (object)DBNull.Value));
             command.Parameters.Add(new SqlParameter("@Publicar", request.Publicar));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
+            command.Parameters.Add(new SqlParameter("@Archivo", (object)request.Archivo ?? DBNull.Value));
 
             try
             {
@@ -157,6 +158,7 @@ namespace WebApiPatrimonio.Controllers
             command.Parameters.Add(new SqlParameter("@Publicar", request.Publicar));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
             command.Parameters.Add(new SqlParameter("@FechaRegistro", request.FechaRegistro));
+            command.Parameters.Add(new SqlParameter("@Archivo", (object)request.Archivo ?? DBNull.Value));
 
             try
             {
@@ -186,6 +188,16 @@ namespace WebApiPatrimonio.Controllers
             );
 
             return Ok(new { mensaje = "Factura eliminada lógicamente." });
+        }
+
+        [HttpGet("archivo/{id}")]
+        public async Task<IActionResult> ObtenerArchivoFactura(long id)
+        {
+            var factura = await _context.FACTURAS.FindAsync(id);
+            if (factura == null || factura.Archivo == null)
+                return NotFound();
+
+            return File(factura.Archivo, "application/octet-stream", $"Factura_{id}.pdf");
         }
 
         private bool FacturaExists(int? id)

@@ -18,5 +18,6 @@ namespace WebApiPatrimonio.Models
         public bool? Publicar { get; set; }
         public bool? Activo { get; set; }
         public DateTime? FechaRegistro { get; set; }
+        public byte[]? Archivo { get; set; } // Para PDF o PNG
     }
 }
