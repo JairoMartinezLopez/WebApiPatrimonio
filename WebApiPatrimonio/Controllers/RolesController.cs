@@ -49,9 +49,8 @@ namespace WebApiPatrimonio.Controllers
             [FromQuery] string? nombre,
             [FromQuery] string? descripcion,
             [FromQuery] string? clave,
-            [FromQuery] bool? bloqueado,
-            [FromQuery]bool?activo
-            )
+            [FromQuery] bool? activo,
+            [FromQuery] bool? bloqueado)
         {
             var query = _context.ROLES.AsQueryable();
 
@@ -63,6 +62,9 @@ namespace WebApiPatrimonio.Controllers
 
             if (!string.IsNullOrEmpty(clave))
                 query = query.Where(u => u.Clave.Contains(clave));
+
+            if (activo.HasValue)
+                query = query.Where(u => u.Activo == activo);
 
             if (bloqueado.HasValue)
                 query = query.Where(u => u.Bloqueado == bloqueado);

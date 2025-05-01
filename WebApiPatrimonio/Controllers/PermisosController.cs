@@ -52,6 +52,7 @@ namespace WebApiPatrimonio.Controllers
             [FromQuery] string? clave,
             [FromQuery] int? modulo,
             [FromQuery] int? accion,
+            [FromQuery] bool? activo,
             [FromQuery] bool? bloqueado)
         {
             var query = _context.PERMISOS.AsQueryable();
@@ -70,6 +71,9 @@ namespace WebApiPatrimonio.Controllers
 
             if (accion.HasValue)
                 query = query.Where(u => u.idAccion == accion);
+
+            if (activo.HasValue)
+                query = query.Where(u => u.Activo == activo);
 
             if (bloqueado.HasValue)
                 query = query.Where(u => u.Bloqueado == bloqueado);
