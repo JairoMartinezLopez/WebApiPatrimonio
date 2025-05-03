@@ -120,7 +120,11 @@ namespace WebApiPatrimonio.Controllers
             command.Parameters.Add(new SqlParameter("@Nota", request.Nota ?? (object)DBNull.Value));
             command.Parameters.Add(new SqlParameter("@Publicar", request.Publicar));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
-            command.Parameters.Add(new SqlParameter("@Archivo", (object)request.Archivo ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Archivo", SqlDbType.VarBinary)
+            {
+                Value = (object?)request.Archivo ?? DBNull.Value
+            });
+
 
             try
             {
@@ -158,7 +162,11 @@ namespace WebApiPatrimonio.Controllers
             command.Parameters.Add(new SqlParameter("@Publicar", request.Publicar));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
             command.Parameters.Add(new SqlParameter("@FechaRegistro", request.FechaRegistro));
-            command.Parameters.Add(new SqlParameter("@Archivo", (object)request.Archivo ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Archivo", SqlDbType.VarBinary)
+            {
+                Value = (object?)request.Archivo ?? DBNull.Value
+            });
+
 
             try
             {
