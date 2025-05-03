@@ -68,6 +68,9 @@ namespace WebApiPatrimonio.Controllers
 
             if (bloqueado.HasValue)
                 query = query.Where(u => u.Bloqueado == bloqueado);
+            
+            if(activo.HasValue)
+                query = query.Where(u => u.Activo == activo);
 
             var roles = await query
                 .Select(u => new Roles
