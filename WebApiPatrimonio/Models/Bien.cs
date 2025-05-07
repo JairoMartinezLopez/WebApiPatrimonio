@@ -8,8 +8,6 @@ namespace WebApiPatrimonio.Models
     {
         [Key]
         public long IdBien { get; set; }  // bigint
-        public int IdAreaSistemaUsuario { get; set; }
-        public int IdPantalla { get; set; }
 
         public int? IdColor { get; set; }  // int
 
@@ -35,34 +33,24 @@ namespace WebApiPatrimonio.Models
 
         public bool? Activo { get; set; }  // bit
 
-        public bool? Estatus { get; set; }  // bit (corregido)
+        public bool? Disponibilidad { get; set; }  // bit (corregido)
 
         public DateTime? FechaBaja { get; set; }  // date
 
-        public int? IdCausal { get; set; }  // int (FK)
+        public int? IdCausalBaja { get; set; }  // int (FK)
 
-        public int? IdDisposicion { get; set; }  // int (FK)
+        public int? IdDisposicionFinal { get; set; }  // int (FK)
 
         public long? IdFactura { get; set; }  // bigint (FK)
 
         public string? NoInventario { get; set; }  // nvarchar(30) (corregido)
 
-        public int? IdCatBien { get; set; }  // int (FK)
+        public int? IdCatalogoBien { get; set; }  // int (FK)
 
         public string? Observaciones { get; set; }  // nvarchar(400)
 
-        public int? IdCategoria { get; set; }  // int (FK)
-
-        public int? IdFinanciamiento { get; set; }  // int (FK)
-
         public bool? AplicaUMAS { get; set; }  // bit
 
-        public int? IdPatrimonio { get; set; }  // int (FK)
-
         public string? Salida { get; set; }  // nvarchar(15) (corregido)
-
-        public int? IdAdscripcion { get; set; }
-        public int? IdTipoBien { get; set; } // Representa el tipo de bien
-
     }
 }

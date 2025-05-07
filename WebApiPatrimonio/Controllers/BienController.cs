@@ -48,16 +48,14 @@ namespace WebApiPatrimonio.Controllers
                 Costo = b.Costo,
                 Etiquetado = b.Etiquetado,
                 FechaEtiquetado = b.FechaEtiquetado,
-                Estatus = b.Estatus,
+                Disponibilidad = b.Disponibilidad,
                 FechaBaja = b.FechaBaja,
-                IdCausal = b.IdCausal,
-                IdDisposicion = b.IdDisposicion,
+                IdCausalBaja = b.IdCausalBaja,
+                IdDisposicionFinal = b.IdDisposicionFinal,
                 IdFactura = b.IdFactura,
                 NoInventario = b.NoInventario,
-                IdCatBien = b.IdCatBien,
-                Observaciones = b.Observaciones,
-                IdCategoria = b.IdCategoria,
-                IdFinanciamiento = b.IdFinanciamiento
+                IdCatalogoBien = b.IdCatalogoBien,
+                Observaciones = b.Observaciones
             })
         .Where(b => b.IdBien == id)
         .SingleOrDefaultAsync();
@@ -72,38 +70,60 @@ namespace WebApiPatrimonio.Controllers
 
         // PUT: api/Bien/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBien(long id, Bien bien)
+        [HttpPut]
+        public async Task<ActionResult> PutBien([FromBody] Bien request)
         {
-            if (id != bien.IdBien)
-            {
-                return BadRequest();
-            }
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_UPD_BIENES";
 
-            _context.Entry(bien).State = EntityState.Modified;
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1));
+            command.Parameters.Add(new SqlParameter("@idBien", request.IdBien));
+            command.Parameters.Add(new SqlParameter("@idColor", (object?)request.IdColor ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@FechaRegistro", (object?)request.FechaRegistro ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@FechaAlta", (object?)request.FechaAlta ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Aviso", request.Aviso ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Serie", request.Serie ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Modelo", request.Modelo ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@idEstadoFisico", (object?)request.IdEstadoFisico ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@idMarca", (object?)request.IdMarca ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Costo", (object?)request.Costo ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Etiquetado", (object?)request.Etiquetado ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@FechaEtiquetado", (object?)request.FechaEtiquetado ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Activo", (object?)request.Activo ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Disponibilidad", (object?)request.Disponibilidad ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@FechaBaja", (object?)request.FechaBaja ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@idCausalBaja", (object?)request.IdCausalBaja ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@idDisposicionFinal", (object?)request.IdDisposicionFinal ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@idFactura", request.IdFactura));
+            command.Parameters.Add(new SqlParameter("@NoInventario", request.NoInventario ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@idCatalogoBien", request.IdCatalogoBien));
+            command.Parameters.Add(new SqlParameter("@Observaciones", request.Observaciones ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@AplicaUMAS", (object?)request.AplicaUMAS ?? DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Salida", request.Salida ?? (object)DBNull.Value));
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "Bien actualizado correctamente." });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (SqlException ex)
             {
-                if (!BienExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest(new { error = ex.Message });
             }
-
-            return NoContent();
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
         }
+
+
 
         // POST: api/Bien
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost("Inserta un bien")]
+        [HttpPost("Insertar")]
         public async Task<IActionResult> InsertarBien([FromBody] Bien bien)
         {
             if (bien == null)
@@ -113,21 +133,13 @@ namespace WebApiPatrimonio.Controllers
 
             try
             {
-                var idBienParam = new SqlParameter("@IdBien", SqlDbType.Int)
-                {
-                    Direction = ParameterDirection.Output
-                };
-
                 await _context.Database.ExecuteSqlRawAsync(
-                    "EXEC PA_INS_PAT_BIENES @IdGeneral, @IdAreaSistemaUsuario, @IdPantalla, @IdBien OUT, " +
-                    "@idColor, @FechaAlta, @Aviso, @Serie, @Modelo, @idEstadoFisico, @idMarca, @Costo, " +
-                    "@Etiquetado, @FechaEtiquetado, @Estatus, @FechaBaja, @Causal, @idDisposicion, @IdFactura, " +
-                    "@NoInventario, @idTipoBien, @IdCatBien, @Observaciones, @IdCategoria, @IdFinanciamiento, " +
-                    "@IdAdscripcion, @Salida, @Cantidad",
-                    new SqlParameter("@IdGeneral", bien.IdAreaSistemaUsuario),
-                    new SqlParameter("@IdAreaSistemaUsuario", bien.IdAreaSistemaUsuario),
-                    new SqlParameter("@IdPantalla", bien.IdPantalla),
-                    idBienParam,
+                    "EXEC PA_INS_BIENES @IdPantalla, @IdGeneral, @idColor, @FechaAlta, @Aviso, @Serie, @Modelo, " +
+                    "@idEstadoFisico, @idMarca, @Costo, @Etiquetado, @FechaEtiquetado, @Activo, @Disponibilidad, " +
+                    "@FechaBaja, @idCausalBaja, @idDisposicionFinal, @idFactura, @NoInventario, @idCatalogoBien, " +
+                    "@Observaciones, @Salida",
+                    new SqlParameter("@IdPantalla", 1),
+                    new SqlParameter("@IdGeneral", 1),
                     new SqlParameter("@idColor", bien.IdColor ?? (object)DBNull.Value),
                     new SqlParameter("@FechaAlta", bien.FechaAlta ?? (object)DBNull.Value),
                     new SqlParameter("@Aviso", bien.Aviso ?? (object)DBNull.Value),
@@ -138,23 +150,19 @@ namespace WebApiPatrimonio.Controllers
                     new SqlParameter("@Costo", bien.Costo ?? (object)DBNull.Value),
                     new SqlParameter("@Etiquetado", bien.Etiquetado ?? (object)DBNull.Value),
                     new SqlParameter("@FechaEtiquetado", bien.FechaEtiquetado ?? (object)DBNull.Value),
-                    new SqlParameter("@Estatus", bien.Estatus ?? (object)DBNull.Value),
+                    new SqlParameter("@Activo", bien.Activo ?? (object)DBNull.Value),
+                    new SqlParameter("@Disponibilidad", bien.Disponibilidad ?? (object)DBNull.Value),
                     new SqlParameter("@FechaBaja", bien.FechaBaja ?? (object)DBNull.Value),
-                    new SqlParameter("@Causal", bien.IdCausal ?? (object)DBNull.Value),
-                    new SqlParameter("@idDisposicion", bien.IdDisposicion ?? (object)DBNull.Value),
-                    new SqlParameter("@IdFactura", bien.IdFactura ?? (object)DBNull.Value),
+                    new SqlParameter("@idCausalBaja", bien.IdCausalBaja ?? (object)DBNull.Value),
+                    new SqlParameter("@idDisposicionFinal", bien.IdDisposicionFinal ?? (object)DBNull.Value),
+                    new SqlParameter("@idFactura", bien.IdFactura ?? (object)DBNull.Value),
                     new SqlParameter("@NoInventario", bien.NoInventario ?? (object)DBNull.Value),
-                    new SqlParameter("@idTipoBien", bien.IdTipoBien ?? (object)DBNull.Value),
-                    new SqlParameter("@IdCatBien", bien.IdCatBien ?? (object)DBNull.Value),
+                    new SqlParameter("@idCatalogoBien", bien.IdCatalogoBien ?? (object)DBNull.Value),
                     new SqlParameter("@Observaciones", bien.Observaciones ?? (object)DBNull.Value),
-                    new SqlParameter("@IdCategoria", bien.IdCategoria ?? (object)DBNull.Value),
-                    new SqlParameter("@IdFinanciamiento", bien.IdFinanciamiento ?? (object)DBNull.Value),
-                    new SqlParameter("@IdAdscripcion", bien.IdAdscripcion ?? (object)DBNull.Value),
-                    new SqlParameter("@Salida", bien.Salida ?? (object)DBNull.Value),
-                    new SqlParameter("@Cantidad", 1)
+                    new SqlParameter("@Salida", bien.Salida ?? (object)DBNull.Value)
                 );
 
-                return Ok(new { Message = "Bien insertado correctamente", IdBien = idBienParam.Value });
+                return Ok(new { Message = "Bien insertado correctamente" });
             }
             catch (Exception ex)
             {
@@ -162,21 +170,35 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+
         // DELETE: api/Bien/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBien(long id)
+        [HttpDelete("eliminar{idBien}")]
+        public async Task<IActionResult> DeleteBien(long idBien)
         {
-            var bien = await _context.BIENES.FindAsync(id);
-            if (bien == null)
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_DEL_BIENES";
+
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1));
+            command.Parameters.Add(new SqlParameter("@idBien", idBien));
+
+            try
             {
-                return NotFound();
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "Bien eliminado (borrado lógico) correctamente." });
             }
-
-            _context.BIENES.Remove(bien);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
         }
+
 
         private bool BienExists(long id)
         {
