@@ -1,12 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace WebApiPatrimonio.Models
+﻿namespace WebApiPatrimonio.Models
 {
-    [Table("FACTURAS")]
-    public class Factura
+    public class FacturaFormDto
     {
-        [Key] public long? idFactura { get; set; }
         public string? NumeroFactura { get; set; }
         public string? FolioFiscal { get; set; }
         public DateTime? FechaFactura { get; set; }
@@ -17,8 +12,9 @@ namespace WebApiPatrimonio.Models
         public bool? Publicar { get; set; }
         public bool? Activo { get; set; }
         public DateTime? FechaRegistro { get; set; }
-        public byte[]? Archivo { get; set; }
+        public IFormFile? Archivo { get; set; }
+
         public int? CantidadBienes { get; set; }
     }
-}
 
+}

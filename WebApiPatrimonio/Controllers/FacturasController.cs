@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Humanizer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using WebApiPatrimonio.Context;
 using WebApiPatrimonio.Models;
 
@@ -16,201 +12,142 @@ namespace WebApiPatrimonio.Controllers
     [ApiController]
     public class FacturasController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _ctx;
+        public FacturasController(ApplicationDbContext ctx) => _ctx = ctx;
 
-        public FacturasController(ApplicationDbContext context)
-        {
-            _context = context;
-        }
-
-        // GET: api/Facturas
+        /* ---------- LISTA ---------- */
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Factura>>> GetFACTURAS()
-        {
-            return await _context.FACTURAS.ToListAsync();
-        }
+        public async Task<ActionResult<IEnumerable<Factura>>> GetAll() =>
+            await _ctx.FACTURAS.AsNoTracking().ToListAsync();
 
-        // GET: api/Facturas/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Factura>> GetFactura(long? id)
-        {
-            var factura = await _context.FACTURAS.FindAsync(id);
-
-            if (factura == null)
-            {
-                return NotFound();
-            }
-
-            return factura;
-        }
-
-        // PUT: api/Facturas/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        /* ---------- FILTRAR ---------- */
         [HttpGet("filtrar")]
-        public async Task<ActionResult<IEnumerable<Factura>>> FiltrarFacturas(
-        [FromQuery] string? numeroFactura,
-        [FromQuery] string? folioFiscal,
-        [FromQuery] DateTime? fechaFactura,
-        [FromQuery] string? nota,
-        [FromQuery] bool? publicado,
-        [FromQuery] DateTime? fechaRegistro,
-        [FromQuery] bool? activo
-    )
+        public async Task<ActionResult<IEnumerable<Factura>>> Filtrar(
+            [FromQuery] string? numeroFactura,
+            [FromQuery] string? folioFiscal,
+            [FromQuery] DateTime? fechaFactura,
+            [FromQuery] string? nota,
+            [FromQuery] bool? publicado,
+            [FromQuery] bool? activo,
+            [FromQuery] DateTime? fechaRegistro)
         {
-            var query = _context.FACTURAS.AsQueryable();
+            var q = _ctx.FACTURAS.AsQueryable();
 
-            if (!string.IsNullOrEmpty(numeroFactura))
-                query = query.Where(f => f.NumeroFactura.Contains(numeroFactura));
+            if (!string.IsNullOrWhiteSpace(numeroFactura))
+                q = q.Where(f => f.NumeroFactura!.Contains(numeroFactura));
 
-            if (!string.IsNullOrEmpty(folioFiscal))
-                query = query.Where(f => f.FolioFiscal.Contains(folioFiscal));
+            if (!string.IsNullOrWhiteSpace(folioFiscal))
+                q = q.Where(f => f.FolioFiscal!.Contains(folioFiscal));
 
-            if (fechaFactura.HasValue)
-                query = query.Where(f => f.FechaFactura == fechaFactura);
+            if (fechaFactura.HasValue) q = q.Where(f => f.FechaFactura == fechaFactura);
+            if (!string.IsNullOrWhiteSpace(nota)) q = q.Where(f => f.Nota!.Contains(nota));
+            if (publicado.HasValue) q = q.Where(f => f.Publicar == publicado);
+            if (activo.HasValue) q = q.Where(f => f.Activo == activo);
+            if (fechaRegistro.HasValue) q = q.Where(f => f.FechaRegistro == fechaRegistro);
 
-            if (!string.IsNullOrEmpty(nota))
-                query = query.Where(f => f.Nota.Contains(nota));
-
-            if (publicado.HasValue)
-                query = query.Where(f => f.Publicar == publicado);
-
-            if (activo.HasValue)
-                query = query.Where(f => f.Activo == activo);
-
-            if (fechaRegistro.HasValue)
-                query = query.Where(f => f.FechaRegistro == fechaRegistro);
-
-            var facturas = await query
-                .Select(f => new Factura
-                {
-                    idFactura = f.idFactura,
-                    NumeroFactura = f.NumeroFactura,
-                    FolioFiscal = f.FolioFiscal,
-                    FechaFactura = f.FechaFactura,
-                    idFinanciamiento = f.idFinanciamiento,
-                    idUnidadResponsable = f.idUnidadResponsable,
-                    idEstado = f.idEstado,
-                    Nota = f.Nota,
-                    Publicar = f.Publicar,
-                    Activo = f.Activo,
-                    FechaRegistro = f.FechaRegistro
-                })
-                .ToListAsync();
-
-            return Ok(facturas);
+            return Ok(await q.AsNoTracking().ToListAsync());
         }
 
-        // PUT: api/Facturas/modificar
-        [HttpPut("modificar")]
-        public async Task<IActionResult> PutFactura([FromBody] Factura request)
-        {
-            using var command = _context.Database.GetDbConnection().CreateCommand();
-            command.CommandType = CommandType.StoredProcedure;
-            command.CommandText = "PA_UPD_FACTURAS";
-
-            command.Parameters.Add(new SqlParameter("@idFactura", request.idFactura));
-            command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@IdGeneral", 1));
-            command.Parameters.Add(new SqlParameter("@NumeroFactura", request.NumeroFactura ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@FolioFiscal", request.FolioFiscal ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@FechaFactura", request.FechaFactura));
-            command.Parameters.Add(new SqlParameter("@idFinanciamiento", request.idFinanciamiento));
-            command.Parameters.Add(new SqlParameter("@idUnidadResponsable", request.idUnidadResponsable));
-            command.Parameters.Add(new SqlParameter("@idEstado", request.idEstado));
-            command.Parameters.Add(new SqlParameter("@Nota", request.Nota ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Publicar", request.Publicar));
-            command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
-            command.Parameters.Add(new SqlParameter("@Archivo", SqlDbType.VarBinary)
-            {
-                Value = (object?)request.Archivo ?? DBNull.Value
-            });
-
-
-            try
-            {
-                await _context.Database.OpenConnectionAsync();
-                await command.ExecuteNonQueryAsync();
-                return Ok(new { mensaje = "Factura modificada correctamente." });
-            }
-            catch (SqlException ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-            finally
-            {
-                await _context.Database.CloseConnectionAsync();
-            }
-        }
-
-        // POST: api/Facturas
+        /* ---------- CREAR  (multipart/form‑data) ---------- */
         [HttpPost]
-        public async Task<ActionResult> PostFactura([FromBody] Factura request)
+        [RequestSizeLimit(50_000_000)]        // 50 MB
+        public async Task<IActionResult> Post([FromForm] FacturaFormDto dto)
         {
-            using var command = _context.Database.GetDbConnection().CreateCommand();
-            command.CommandType = CommandType.StoredProcedure;
-            command.CommandText = "PA_INS_FACTURAS";
-
-            command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@IdGeneral", 1));
-            command.Parameters.Add(new SqlParameter("@NumeroFactura", request.NumeroFactura ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@FolioFiscal", request.FolioFiscal ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@FechaFactura", request.FechaFactura));
-            command.Parameters.Add(new SqlParameter("@idFinanciamiento", request.idFinanciamiento));
-            command.Parameters.Add(new SqlParameter("@idUnidadResponsable", request.idUnidadResponsable));
-            command.Parameters.Add(new SqlParameter("@idEstado", request.idEstado));
-            command.Parameters.Add(new SqlParameter("@Nota", request.Nota ?? (object)DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Publicar", request.Publicar));
-            command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
-            command.Parameters.Add(new SqlParameter("@FechaRegistro", request.FechaRegistro));
-            command.Parameters.Add(new SqlParameter("@Archivo", SqlDbType.VarBinary)
+            byte[]? bin = null;
+            if (dto.Archivo is { Length: > 0 })
             {
-                Value = (object?)request.Archivo ?? DBNull.Value
-            });
+                using var ms = new MemoryStream();
+                await dto.Archivo.CopyToAsync(ms);
+                bin = ms.ToArray();
+            }
 
+            await using var cmd = _ctx.Database.GetDbConnection().CreateCommand();
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PA_INS_FACTURAS";
+
+            cmd.Parameters.AddRange(new[]
+            {
+                new SqlParameter("@IdPantalla",           1),
+                new SqlParameter("@IdGeneral",            1),
+                new SqlParameter("@NumeroFactura",  dto.NumeroFactura  ?? (object)DBNull.Value),
+                new SqlParameter("@FolioFiscal",    dto.FolioFiscal    ?? (object)DBNull.Value),
+                new SqlParameter("@FechaFactura",   dto.FechaFactura   ?? (object)DBNull.Value),
+                new SqlParameter("@idFinanciamiento",   dto.idFinanciamiento   ?? (object)DBNull.Value),
+                new SqlParameter("@idUnidadResponsable",dto.idUnidadResponsable?? (object)DBNull.Value),
+                new SqlParameter("@idEstado",           dto.idEstado          ?? (object)DBNull.Value),
+                new SqlParameter("@Nota",          dto.Nota          ?? (object)DBNull.Value),
+                new SqlParameter("@Publicar",      dto.Publicar      ?? (object)DBNull.Value),
+                new SqlParameter("@Activo",        dto.Activo        ?? (object)DBNull.Value),
+                new SqlParameter("@FechaRegistro", dto.FechaRegistro ?? DateTime.Now),
+                new SqlParameter("@Archivo", SqlDbType.VarBinary,-1){Value = (object?)bin ?? DBNull.Value},
+                new SqlParameter("@CantidadBienes", dto.CantidadBienes ?? (object)DBNull.Value)
+            });
 
             try
             {
-                await _context.Database.OpenConnectionAsync();
-                await command.ExecuteNonQueryAsync();
+                await _ctx.Database.OpenConnectionAsync();
+                await cmd.ExecuteNonQueryAsync();
                 return Ok(new { mensaje = "Factura agregada correctamente." });
             }
-            catch (SqlException ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-            finally
-            {
-                await _context.Database.CloseConnectionAsync();
-            }
+            catch (SqlException ex) { return BadRequest(new { ex.Message }); }
+            finally { await _ctx.Database.CloseConnectionAsync(); }
         }
 
-        // DELETE: api/Facturas/{idFactura}
+        /* ---------- ACTUALIZAR (sin archivo) ---------- */
+        [HttpPut("modificar")]
+        public async Task<IActionResult> Put([FromBody] Factura f)
+        {
+            await using var cmd = _ctx.Database.GetDbConnection().CreateCommand();
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PA_UPD_FACTURAS";
+
+            cmd.Parameters.AddRange(new[]
+            {
+                new SqlParameter("@idFactura",      f.idFactura),
+                new SqlParameter("@IdPantalla",     1),
+                new SqlParameter("@IdGeneral",      1),
+                new SqlParameter("@NumeroFactura",  f.NumeroFactura  ?? (object)DBNull.Value),
+                new SqlParameter("@FolioFiscal",    f.FolioFiscal    ?? (object)DBNull.Value),
+                new SqlParameter("@FechaFactura",   f.FechaFactura   ?? (object)DBNull.Value),
+                new SqlParameter("@idFinanciamiento",   f.idFinanciamiento   ?? (object)DBNull.Value),
+                new SqlParameter("@idUnidadResponsable",f.idUnidadResponsable?? (object)DBNull.Value),
+                new SqlParameter("@idEstado",           f.idEstado          ?? (object)DBNull.Value),
+                new SqlParameter("@Nota",          f.Nota          ?? (object)DBNull.Value),
+                new SqlParameter("@Publicar",      f.Publicar      ?? (object)DBNull.Value),
+                new SqlParameter("@Activo",        f.Activo        ?? (object)DBNull.Value),
+                new SqlParameter("@Archivo", SqlDbType.VarBinary,-1){Value = (object?)f.Archivo ?? DBNull.Value},
+                new SqlParameter("@CantidadBienes", f.CantidadBienes ?? (object)DBNull.Value)
+            });
+
+            try
+            {
+                await _ctx.Database.OpenConnectionAsync();
+                await cmd.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "Factura modificada correctamente." });
+            }
+            catch (SqlException ex) { return BadRequest(new { ex.Message }); }
+            finally { await _ctx.Database.CloseConnectionAsync(); }
+        }
+
+        /* ---------- ELIMINAR LÓGICO ---------- */
         [HttpDelete("{idFactura}")]
-        public async Task<IActionResult> DeleteFactura(long idFactura)
+        public async Task<IActionResult> Delete(long idFactura)
         {
             var sql = "EXEC PA_DEL_FACTURAS @idFactura, @IdPantalla, @IdGeneral";
-            var result = await _context.Database.ExecuteSqlRawAsync(sql,
+            await _ctx.Database.ExecuteSqlRawAsync(sql,
                 new SqlParameter("@idFactura", idFactura),
                 new SqlParameter("@IdPantalla", 1),
-                new SqlParameter("@IdGeneral", 1)
-            );
-
-            return Ok(new { mensaje = "Factura eliminada lógicamente." });
+                new SqlParameter("@IdGeneral", 1));
+            return Ok(new { mensaje = "Factura eliminada." });
         }
 
+        /* ---------- DESCARGAR ---------- */
         [HttpGet("archivo/{id}")]
-        public async Task<IActionResult> ObtenerArchivoFactura(long id)
+        public async Task<IActionResult> Descargar(long id)
         {
-            var factura = await _context.FACTURAS.FindAsync(id);
-            if (factura == null || factura.Archivo == null)
-                return NotFound();
-
-            return File(factura.Archivo, "application/octet-stream", $"Factura_{id}.pdf");
-        }
-
-        private bool FacturaExists(int? id)
-        {
-            return _context.FACTURAS.Any(e => e.idFactura == id);
+            var f = await _ctx.FACTURAS.FindAsync(id);
+            if (f?.Archivo is null) return NotFound();
+            return File(f.Archivo, "application/pdf", $"Factura_{id}.pdf");
         }
     }
 }

@@ -6,6 +6,11 @@ using System.Text;
 using WebApiPatrimonio.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 52428800; // 50 MB
+});
+
 
 // Add services to the container.
 //Variable de conexion a la base de datos
@@ -50,7 +55,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 var app = builder.Build();
-app.UseCors("CorsPolicy");
 
 if (app.Environment.IsDevelopment())
 {
@@ -60,13 +64,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Usa CORS antes de cualquier otra cosa que pueda bloquear la petición
+app.UseCors("CorsPolicy");
 
+// Agrega esta línea para activar autenticación JWT
+app.UseAuthentication(); // <<<<<<<< OBLIGATORIO
 
 app.UseAuthorization();
 
 app.UseMiddleware<JwtMiddleware>();
-
-
 app.MapControllers();
 
 app.Run();
