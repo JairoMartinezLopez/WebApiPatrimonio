@@ -141,6 +141,30 @@ namespace WebApiPatrimonio.Controllers
             return Ok(new { mensaje = "Factura eliminada." });
         }
 
+        [HttpPut("publicar")]
+        public async Task<IActionResult> Publicar(long idFactura)
+        {
+            var nuevoEstadoPublicarParam = new SqlParameter("@NuevoEstadoPublicar", System.Data.SqlDbType.Bit)
+            {
+                Direction = System.Data.ParameterDirection.Output
+            };
+
+            var sql = "EXEC PA_PUBLICAR_FACTURAS @idFactura, @IdPantalla, @IdGeneral, @NuevoEstadoPublicar OUTPUT";
+
+            await _ctx.Database.ExecuteSqlRawAsync(sql,
+                new SqlParameter("@idFactura", idFactura),
+                new SqlParameter("@IdPantalla", 1),
+                new SqlParameter("@IdGeneral", 1),
+                nuevoEstadoPublicarParam);
+
+            // Obtener el valor del parámetro de salida
+            bool nuevoEstado = (bool)nuevoEstadoPublicarParam.Value;
+
+            string mensaje = nuevoEstado ? "Factura publicada correctamente." : "Factura despublicada correctamente.";
+
+            return Ok(new { mensaje });
+        }
+
         /* ---------- DESCARGAR ---------- */
         [HttpGet("archivo/{id}")]
         public async Task<IActionResult> Descargar(long id)
