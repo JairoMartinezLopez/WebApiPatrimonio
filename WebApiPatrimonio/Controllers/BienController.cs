@@ -68,6 +68,97 @@ namespace WebApiPatrimonio.Controllers
             return bien;
         }
 
+        [HttpGet("filtrar")]
+        public async Task<ActionResult<IEnumerable<Bien>>> FiltrarBienes(
+            [FromQuery] int? idColor,
+            [FromQuery] DateTime? fechaRegistro,
+            [FromQuery] DateTime? fechaAlta,
+            [FromQuery] string? serie,
+            [FromQuery] string? modelo,
+            [FromQuery] int? idEstadoFisico,
+            [FromQuery] int? idMarca,
+            [FromQuery] double? costo,
+            [FromQuery] bool? etiquetado,
+            [FromQuery] DateTime? fechaEtiquetado,
+            [FromQuery] bool? activo,
+            [FromQuery] bool? disponibilidad,
+            [FromQuery] DateTime? fechaBaja,
+            [FromQuery] int? idCausalBaja,
+            [FromQuery] int? idDisposicionFinal,
+            [FromQuery] long? idFactura,
+            [FromQuery] string? noInventario,
+            [FromQuery] int? idCatalogoBien,
+            [FromQuery] bool? aplicaUMAS,
+            [FromQuery] string? salida
+        )
+        {
+            var query = _context.BIENES.AsQueryable();
+
+            if (idColor.HasValue)
+                query = query.Where(b => b.IdColor == idColor);
+
+            if (fechaRegistro.HasValue)
+                query = query.Where(b => b.FechaRegistro.Value.Date == fechaRegistro.Value.Date);
+
+            if (fechaAlta.HasValue)
+                query = query.Where(b => b.FechaAlta == fechaAlta);
+
+            if (!string.IsNullOrEmpty(serie))
+                query = query.Where(b => b.Serie.Contains(serie));
+
+            if (!string.IsNullOrEmpty(modelo))
+                query = query.Where(b => b.Modelo.Contains(modelo));
+
+            if (idEstadoFisico.HasValue)
+                query = query.Where(b => b.IdEstadoFisico == idEstadoFisico);
+
+            if (idMarca.HasValue)
+                query = query.Where(b => b.IdMarca == idMarca);
+
+            if (costo.HasValue)
+                query = query.Where(b => b.Costo == costo);
+
+            if (etiquetado.HasValue)
+                query = query.Where(b => b.Etiquetado == etiquetado);
+
+            if (fechaEtiquetado.HasValue)
+                query = query.Where(b => b.FechaEtiquetado.Value.Date == fechaEtiquetado.Value.Date);
+
+            if (activo.HasValue)
+                query = query.Where(b => b.Activo == activo);
+
+            if (disponibilidad.HasValue)
+                query = query.Where(b => b.Disponibilidad == disponibilidad);
+
+            if (fechaBaja.HasValue)
+                query = query.Where(b => b.FechaBaja == fechaBaja);
+
+            if (idCausalBaja.HasValue)
+                query = query.Where(b => b.IdCausalBaja == idCausalBaja);
+
+            if (idDisposicionFinal.HasValue)
+                query = query.Where(b => b.IdDisposicionFinal == idDisposicionFinal);
+
+            if (idFactura.HasValue)
+                query = query.Where(b => b.IdFactura == idFactura);
+
+            if (!string.IsNullOrEmpty(noInventario))
+                query = query.Where(b => b.NoInventario.Contains(noInventario));
+
+            if (idCatalogoBien.HasValue)
+                query = query.Where(b => b.IdCatalogoBien == idCatalogoBien);
+
+            if (aplicaUMAS.HasValue)
+                query = query.Where(b => b.AplicaUMAS == aplicaUMAS);
+
+            if (!string.IsNullOrEmpty(salida))
+                query = query.Where(b => b.Salida.Contains(salida));
+
+            var bienes = await query.ToListAsync();
+
+            return Ok(bienes);
+        }
+
         // PUT: api/Bien/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut]
@@ -199,6 +290,29 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+        [HttpPut("Etiquetado")]
+        public async Task<IActionResult> Etiquetado(int idBien)
+        {
+            var nuevoEstadoParam = new SqlParameter("@NuevoEstadoPublicar", System.Data.SqlDbType.Bit)
+            {
+                Direction = System.Data.ParameterDirection.Output
+            };
+
+            var sql = "EXEC PA_ETIQUETADO_BIENES @idBien, @IdPantalla, @IdGeneral, @NuevoEstadoEtiquetado OUTPUT";
+
+            await _context.Database.ExecuteSqlRawAsync(sql,
+                new SqlParameter("@idBien", idBien),
+                new SqlParameter("@IdPantalla", 1),
+                new SqlParameter("@IdGeneral", 1),
+                nuevoEstadoParam);
+
+            // Obtener el valor del parámetro de salida
+            bool nuevoEstado = (bool)nuevoEstadoParam.Value;
+
+            string mensaje = nuevoEstado ? "BIEN Etiquetado correctamente." : "BIEN sin etiquetado correctamente.";
+            
+            return Ok(new { mensaje });
+        }
 
         private bool BienExists(long id)
         {

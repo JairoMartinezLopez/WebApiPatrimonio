@@ -10,6 +10,7 @@ namespace WebApiPatrimonio.Context
         public DbSet<Bien> BIENES { get; set; }
         public DbSet<Areas> AREAS { get; set; }
         public DbSet<Regiones> REGIONES { get; set; }
+        public DbSet<Transferencia> TRANSFERENCIAS { get; set; }
         public DbSet<Levantamiento> LEVANTAMIENTOSINVENTARIO { get; set; }
 
         public DbSet<ProgramarEventos> EVENTOSINVENTARIO { get; set; }
