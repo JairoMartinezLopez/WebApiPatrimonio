@@ -15,6 +15,9 @@ namespace WebApiPatrimonio.Context
 
         public DbSet<ProgramarEventos> EVENTOSINVENTARIO { get; set; }
 
+        public DbSet<ConfiguracionGeneral> ConfiguracionGeneral { get; set; }
+
+
         public async Task<int> InsertarEventoInventario(
         int idGeneral, int idAreaSistemaUsuario, int idPantalla, DateTime fechaInicio,
         DateTime fechaTermino, int idArea, int idAreaSistemaUsuario2, int idEventoEstado)

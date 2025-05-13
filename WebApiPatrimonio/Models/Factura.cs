@@ -19,6 +19,7 @@ namespace WebApiPatrimonio.Models
         public DateTime? FechaRegistro { get; set; }
         public byte[]? Archivo { get; set; }
         public int? CantidadBienes { get; set; }
+        public string? RutaArchivo { get; internal set; }
     }
 }
 
