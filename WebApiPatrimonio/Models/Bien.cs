@@ -7,50 +7,28 @@ namespace WebApiPatrimonio.Models
     public class Bien
     {
         [Key]
-        public long IdBien { get; set; }  // bigint
-
-        public int? IdColor { get; set; }  // int
-
-        public DateTime? FechaRegistro { get; set; }  // datetime
-
-        public DateTime? FechaAlta { get; set; }  // date
-
-        public string? Aviso { get; set; }  // nvarchar(50)
-
-        public string? Serie { get; set; }  // nvarchar(50)
-
-        public string? Modelo { get; set; }  // nvarchar(100)
-
-        public int? IdEstadoFisico { get; set; }  // int (FK)
-
-        public int? IdMarca { get; set; }  // int (FK)
-
-        public double? Costo { get; set; }  // float
-
-        public bool? Etiquetado { get; set; }  // bit
-
-        public DateTime? FechaEtiquetado { get; set; }  // date (corregido)
-
-        public bool? Activo { get; set; }  // bit
-
-        public bool? Disponibilidad { get; set; }  // bit (corregido)
-
-        public DateTime? FechaBaja { get; set; }  // date
-
-        public int? IdCausalBaja { get; set; }  // int (FK)
-
-        public int? IdDisposicionFinal { get; set; }  // int (FK)
-
-        public long? IdFactura { get; set; }  // bigint (FK)
-
-        public string? NoInventario { get; set; }  // nvarchar(30) (corregido)
-
-        public int? IdCatalogoBien { get; set; }  // int (FK)
-
-        public string? Observaciones { get; set; }  // nvarchar(400)
-
-        public bool? AplicaUMAS { get; set; }  // bit
-
-        public string? Salida { get; set; }  // nvarchar(15) (corregido)
+        public long IdBien { get; set; }
+        public int? IdColor { get; set; }
+        public DateTime? FechaRegistro { get; set; } 
+        public DateTime? FechaAlta { get; set; }  
+        public string? Aviso { get; set; }  
+        public string? Serie { get; set; }  
+        public string? Modelo { get; set; } 
+        public int? IdEstadoFisico { get; set; }
+        public int? IdMarca { get; set; }
+        public double? Costo { get; set; } 
+        public bool? Etiquetado { get; set; }
+        public DateTime? FechaEtiquetado { get; set; }  
+        public bool? Activo { get; set; } 
+        public bool? Disponibilidad { get; set; } 
+        public DateTime? FechaBaja { get; set; }
+        public int? IdCausalBaja { get; set; }  
+        public int? IdDisposicionFinal { get; set; }  
+        public long? IdFactura { get; set; } 
+        public string? NoInventario { get; set; } 
+        public int? IdCatalogoBien { get; set; }
+        public string? Observaciones { get; set; }
+        public bool? AplicaUMAS { get; set; }
+        public string? Salida { get; set; }
     }
 }

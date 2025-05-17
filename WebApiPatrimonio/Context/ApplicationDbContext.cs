@@ -11,10 +11,9 @@ namespace WebApiPatrimonio.Context
         public DbSet<Areas> AREAS { get; set; }
         public DbSet<Regiones> REGIONES { get; set; }
         public DbSet<Transferencia> TRANSFERENCIAS { get; set; }
+        public DbSet<UbicacionFisica> UBICACIONESFISICAS { get; set; }
         public DbSet<Levantamiento> LEVANTAMIENTOSINVENTARIO { get; set; }
-
         public DbSet<ProgramarEventos> EVENTOSINVENTARIO { get; set; }
-
         public DbSet<ConfiguracionGeneral> ConfiguracionGeneral { get; set; }
 
 
