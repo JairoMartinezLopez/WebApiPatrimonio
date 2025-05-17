@@ -234,7 +234,7 @@ namespace WebApiPatrimonio.Controllers
                 await _context.Database.ExecuteSqlRawAsync(
                     "EXEC PA_INS_BIENES @IdPantalla, @IdGeneral, @idColor, @FechaAlta, @Aviso, @Serie, @Modelo, " +
                     "@idEstadoFisico, @idMarca, @Costo, @Etiquetado, @FechaEtiquetado, @Activo, @Disponibilidad, " +
-                    "@FechaBaja, @idCausalBaja, @idDisposicionFinal, @idFactura, @NoInventario, @idCatalogoBien, " +
+                    "@FechaBaja, @idCausalBaja, @idDisposicionFinal, @idFactura, @PartidaContable, @idCatalogoBien, " +
                     "@Observaciones, @Salida",
                     new SqlParameter("@IdPantalla", 1),
                     new SqlParameter("@IdGeneral", 1),
@@ -254,7 +254,7 @@ namespace WebApiPatrimonio.Controllers
                     new SqlParameter("@idCausalBaja", bien.IdCausalBaja ?? (object)DBNull.Value),
                     new SqlParameter("@idDisposicionFinal", bien.IdDisposicionFinal ?? (object)DBNull.Value),
                     new SqlParameter("@idFactura", bien.IdFactura ?? (object)DBNull.Value),
-                    new SqlParameter("@NoInventario", bien.NoInventario ?? (object)DBNull.Value),
+                    new SqlParameter("@PartidaContable", bien.NoInventario ?? (object)DBNull.Value),
                     new SqlParameter("@idCatalogoBien", bien.IdCatalogoBien ?? (object)DBNull.Value),
                     new SqlParameter("@Observaciones", bien.Observaciones ?? (object)DBNull.Value),
                     new SqlParameter("@Salida", bien.Salida ?? (object)DBNull.Value)
