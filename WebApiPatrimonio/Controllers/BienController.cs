@@ -325,9 +325,7 @@ namespace WebApiPatrimonio.Controllers
         public async Task<IActionResult> GenerarQRBienesPDF([FromQuery(Name = "idBienes")] string idBienes)
         {
             if (string.IsNullOrEmpty(idBienes))
-            {
                 return BadRequest("Se debe proporcionar al menos un ID de Bien.");
-            }
 
             var listaBienes = new List<(string NumeroInventario, string Marca, string Modelo, string Serie, string Color)>();
 
@@ -344,105 +342,101 @@ namespace WebApiPatrimonio.Controllers
                 using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    var numeroInventario = reader["NoInventario"].ToString();
-                    var marca = reader["Marca"].ToString();
-                    var modelo = reader["Modelo"].ToString();
-                    var serie = reader["Serie"].ToString();
-                    var color = reader["Color"].ToString();
-
-                    listaBienes.Add((numeroInventario, marca, modelo, serie, color));
+                    listaBienes.Add((
+                        reader["NoInventario"].ToString(),
+                        reader["Marca"].ToString(),
+                        reader["Modelo"].ToString(),
+                        reader["Serie"].ToString(),
+                        reader["Color"].ToString()
+                    ));
                 }
 
                 using var ms = new MemoryStream();
-                using var document = new PdfSharpCore.Pdf.PdfDocument();
-                var font = new XFont("Arial", 12);
-                var lineSpace = 15; // Espacio entre líneas de texto
+                using var document = new PdfDocument();
 
-                // Configuración para 6 QR por página (3 filas x 2 columnas)
-                int qrPorPagina = 6;
-                int filas = 3;
-                int columnas = 2;
-                double qrAncho = 150;
-                double qrAlto = 150;
-                double margenX = 20;
-                double margenY = 20;
+                var font = new XFont("Arial", 9, XFontStyle.Regular);
+                var bold = new XFont("Arial", 9, XFontStyle.Bold);
+                var titleFont = new XFont("Arial", 11, XFontStyle.Bold);
 
-                int bienIndex = 0;
-                while (bienIndex < listaBienes.Count)
+                int etiquetasPorPagina = 4;
+                double etiquetaAncho = 260;
+                double etiquetaAlto = 180;
+                double margenX = 30;
+                double margenY = 30;
+                double espaciadoY = 20;
+
+                int index = 0;
+
+                while (index < listaBienes.Count)
                 {
                     var page = document.AddPage();
                     page.Size = PdfSharpCore.PageSize.A4;
                     var gfx = XGraphics.FromPdfPage(page);
-                    double paginaAncho = gfx.PageSize.Width;
-                    double paginaAlto = gfx.PageSize.Height;
 
-                    // Calcular el espacio disponible para el QR y el texto
-                    double espacioQRTextoY = qrAlto + 5 * lineSpace + 10; // Altura del QR + altura del texto + espacio
-                    double espacioX = (paginaAncho - 2 * margenX - columnas * qrAncho) / (columnas - 1);
-                    double espacioY = (paginaAlto - 2 * margenY - filas * espacioQRTextoY) / (filas - 1);
-
-                    for (int i = 0; i < filas; i++)
+                    for (int i = 0; i < etiquetasPorPagina && index < listaBienes.Count; i++)
                     {
-                        for (int j = 0; j < columnas; j++)
+                        double x = margenX;
+                        double y = margenY + i * (etiquetaAlto + espaciadoY);
+
+                        // Fondo gris MUY claro
+                        var fondoClaro = new XSolidBrush(XColor.FromArgb(240, 240, 240));
+                        gfx.DrawRectangle(fondoClaro, x, y, etiquetaAncho, etiquetaAlto);
+
+                        // Borde
+                        gfx.DrawRectangle(XPens.Black, x, y, etiquetaAncho, etiquetaAlto);
+
+                        // Encabezado
+                        gfx.DrawString("PODER JUDICIAL DEL ESTADO", titleFont, XBrushes.Black, new XRect(x + 10, y + 10, etiquetaAncho - 20, 20), XStringFormats.TopLeft);
+
+                        var bien = listaBienes[index];
+                        string contenidoQR = $"Inventario: {bien.NumeroInventario}\nMarca: {bien.Marca}\nModelo: {bien.Modelo}\nSerie: {bien.Serie}\nColor: {bien.Color}";
+
+                        var qrGen = new QRCodeGenerator();
+                        var qrData = qrGen.CreateQrCode(contenidoQR, QRCodeGenerator.ECCLevel.Q);
+                        var qrCode = new BitmapByteQRCode(qrData);
+                        byte[] qrImage = qrCode.GetGraphic(20);
+                        using var qrStream = new MemoryStream(qrImage);
+                        var image = XImage.FromStream(() => new MemoryStream(qrStream.ToArray()));
+                        gfx.DrawImage(image, x + 10, y + 45, 100, 100);
+
+                        // Texto con ajuste si el No. Inventario es muy largo
+                        double textoX = x + 120;
+                        double textoY = y + 50;
+
+                        void DrawText(string label, string value)
                         {
-                            if (bienIndex < listaBienes.Count)
+                            gfx.DrawString($"{label}", bold, XBrushes.Black, new XPoint(textoX, textoY));
+                            textoY += 12;
+
+                            // Si es largo, dividir
+                            const int maxLineLength = 30;
+                            while (value.Length > maxLineLength)
                             {
-                                var bien = listaBienes[bienIndex];
-                                string contenidoQR = $"Inventario: {bien.NumeroInventario}\nMarca: {bien.Marca}\nModelo: {bien.Modelo}\nSerie: {bien.Serie}\nColor: {bien.Color}";
-
-                                var qrGenerator = new QRCodeGenerator();
-                                var qrData = qrGenerator.CreateQrCode(contenidoQR, QRCodeGenerator.ECCLevel.Q);
-                                var qrCode = new BitmapByteQRCode(qrData);
-                                byte[] qrBytes = qrCode.GetGraphic(20);
-                                using var imageStream = new MemoryStream(qrBytes);
-                                var image = XImage.FromStream(() => new MemoryStream(imageStream.ToArray()));
-
-                                // Calcula la posición del QR
-                                double x = margenX + j * (qrAncho + espacioX);
-                                double y = margenY + i * (espacioQRTextoY + espacioY); // Usa espacioQRTextoY
-
-                                gfx.DrawImage(image, x, y, qrAncho, qrAlto);
-
-                                // Dibuja el texto debajo del QR como una lista
-                                double textoX = x;
-                                double textoY = y + qrAlto + 5;
-                                gfx.DrawString($"Inventario: {bien.NumeroInventario}", font, XBrushes.Black, new XRect(textoX, textoY, paginaAncho - x, 0));
-                                textoY += lineSpace;
-                                gfx.DrawString($"Marca: {bien.Marca}", font, XBrushes.Black, new XRect(textoX, textoY, paginaAncho - x, 0));
-                                textoY += lineSpace;
-                                gfx.DrawString($"Modelo: {bien.Modelo}", font, XBrushes.Black, new XRect(textoX, textoY, paginaAncho - x, 0));
-                                textoY += lineSpace;
-                                gfx.DrawString($"Serie: {bien.Serie}", font, XBrushes.Black, new XRect(textoX, textoY, paginaAncho - x, 0));
-                                textoY += lineSpace;
-                                gfx.DrawString($"Color: {bien.Color}", font, XBrushes.Black, new XRect(textoX, textoY, paginaAncho - x, 0));
-
-                                bienIndex++;
+                                gfx.DrawString(value.Substring(0, maxLineLength), font, XBrushes.Black, new XPoint(textoX + 10, textoY));
+                                value = value.Substring(maxLineLength);
+                                textoY += 12;
                             }
-                            else
-                            {
-                                break; // No hay más bienes para esta página
-                            }
+                            gfx.DrawString(value, font, XBrushes.Black, new XPoint(textoX + 10, textoY));
+                            textoY += 15;
                         }
-                        if (bienIndex >= listaBienes.Count)
-                        {
-                            break; // No hay más bienes
-                        }
+
+                        DrawText("Inventario:", bien.NumeroInventario);
+                        DrawText("Marca:", bien.Marca);
+                        DrawText("Modelo:", bien.Modelo);
+                        DrawText("Serie:", bien.Serie);
+                        DrawText("Color:", bien.Color);
+
+                        index++;
                     }
                 }
 
                 document.Save(ms);
                 ms.Position = 0;
-
-                // Fuerza la recolección de basura
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-
-                return File(ms.ToArray(), "application/pdf", $"QR_{idBienes.Replace(",", "_")}.pdf");
+                return File(ms.ToArray(), "application/pdf", $"Etiquetas_{DateTime.Now:yyyyMMddHHmmss}.pdf");
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
-                return StatusCode(500, $"Error al generar el PDF: {ex.Message}");
+                return StatusCode(500, $"Error al generar etiquetas: {ex.Message}");
             }
         }
 
