@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using WebApiPatrimonio.Context;
 using WebApiPatrimonio.Models;
@@ -23,14 +25,14 @@ namespace WebApiPatrimonio.Controllers
 
         // GET: api/ProgramaLevatamiento
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProgramarEventos>>> GetEVENTOSINVENTARIO()
+        public async Task<ActionResult<IEnumerable<EventosInventario>>> GetEVENTOSINVENTARIO()
         {
             return await _context.EVENTOSINVENTARIO.ToListAsync();
         }
 
         // GET: api/ProgramaLevatamiento/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProgramarEventos>> GetProgramaLevatamiento(int id)
+        public async Task<ActionResult<EventosInventario>> GetProgramaLevatamiento(int id)
         {
             var programaLevatamiento = await _context.EVENTOSINVENTARIO.FindAsync(id);
 
@@ -42,66 +44,152 @@ namespace WebApiPatrimonio.Controllers
             return programaLevatamiento;
         }
 
+        [HttpGet("filtar")]
+        public async Task<ActionResult<IEnumerable<EventosInventario>>> filtrarEventos(
+            [FromQuery] DateTime? fechaInicio,
+            [FromQuery] DateTime? fechaTermino,
+            [FromQuery] int? idArea,
+            [FromQuery] int? idGeneral,
+            [FromQuery] int? idEventoestado,
+            [FromQuery] bool? activo,
+            [FromQuery] string? folio)
+        {
+            var query = _context.EVENTOSINVENTARIO.AsQueryable();
+
+            if (fechaInicio.HasValue)
+                query = query.Where(u => u.FechaInicio == fechaInicio);
+
+            if (fechaTermino.HasValue)
+                query = query.Where(u => u.FechaTermino == fechaTermino);
+
+            if (idArea.HasValue)
+                query = query.Where(u => u.idArea == idArea);
+
+            if (idGeneral.HasValue)
+                query = query.Where(u => u.idGeneral == idGeneral);
+
+            if (idEventoestado.HasValue)
+                query = query.Where(u => u.idEventoEstado == idEventoestado);
+
+            if (activo.HasValue)
+                query = query.Where(u => u.Activo == activo);
+
+            if (!string.IsNullOrEmpty(folio))
+                query = query.Where(u => u.Folio.Contains(folio));
+
+            var eventos = await query
+                .Select(u => new EventosInventario
+                {
+                    IdEventoInventario = u.IdEventoInventario,
+                    FechaInicio = u.FechaInicio,
+                    FechaTermino = u.FechaTermino,
+                    idArea = u.idArea,
+                    idGeneral = u.idGeneral,
+                    idEventoEstado = u.idEventoEstado,
+                    Activo = u.Activo,
+                    Folio = u.Folio
+                }).ToListAsync();
+
+            return Ok(eventos);
+        }
+
         // PUT: api/ProgramaLevatamiento/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProgramaLevatamiento(int id, ProgramarEventos programaLevatamiento)
+        [HttpPut]
+        public async Task<IActionResult> PutProgramaLevatamiento([FromBody] EventosInventario request)
         {
-            if (id != programaLevatamiento.IdEventoInventario)
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
             {
-                return BadRequest();
-            }
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
 
-            _context.Entry(programaLevatamiento).State = EntityState.Modified;
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_UPD_EVENTOSINVENTARIO";
+
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
+            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@IdGeneral", request.idGeneral));// Este es el usuario asignado al evento
+            command.Parameters.Add(new SqlParameter("@idEventoInventario", request.IdEventoInventario));
+            command.Parameters.Add(new SqlParameter("@idArea", request.idArea));
+            command.Parameters.Add(new SqlParameter("@FechaInicio", request.FechaInicio));
+            command.Parameters.Add(new SqlParameter("@FechaTermino", request.FechaTermino ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Folio", request.Folio ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
+            command.Parameters.Add(new SqlParameter("@idEventoEstado", request.idEventoEstado));
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "El Evento del inventario a sido modificado correctamente." });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (SqlException ex)
             {
-                if (!ProgramaLevatamientoExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest(new { error = ex.Message });
             }
-
-            return NoContent();
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
         }
 
         // POST: api/ProgramaLevatamiento
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<IActionResult> InsertarEventoInventario([FromBody] EventoInventarioRequest request)
+        public async Task<IActionResult> InsertarEventoInventario(EventosInventario request)
         {
-            if (request == null) return BadRequest("Datos inválidos");
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
 
-            int idEventoInventario = await _context.InsertarEventoInventario(
-                request.IdGeneral, request.IdAreaSistemaUsuario, request.IdPantalla,
-                request.FechaInicio, request.FechaTermino, request.IdArea,
-                request.IdAreaSistemaUsuario2, request.IdEventoEstado);
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = System.Data.CommandType.StoredProcedure;
+            command.CommandText = "PA_INS_EVENTOSINVENTARIO";
 
-            return Ok(new { IdEventoInventario = idEventoInventario });
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
+            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@IdGeneral", request.idGeneral));// Este es el usuario asignado al evento
+            command.Parameters.Add(new SqlParameter("@idArea", request.idArea));
+            command.Parameters.Add(new SqlParameter("@FechaInicio", request.FechaInicio));
+            command.Parameters.Add(new SqlParameter("@FechaTermino", request.FechaTermino));
+            command.Parameters.Add(new SqlParameter("@Folio", request.Folio));
+            command.Parameters.Add(new SqlParameter("@Activo", 1));
+            command.Parameters.Add(new SqlParameter("@idEventoEstado", request.idEventoEstado));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "Evento Programado correctamente." });
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
         }
 
         // DELETE: api/ProgramaLevatamiento/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProgramaLevatamiento(int id)
         {
-            var programaLevatamiento = await _context.EVENTOSINVENTARIO.FindAsync(id);
-            if (programaLevatamiento == null)
-            {
-                return NotFound();
-            }
+            var sql = "EXEC PA_DEL_EVENTOSINVENTARIO @IdPantalla, @IdGeneral, @idEventoInventario";
+            var result = await _context.Database.ExecuteSqlRawAsync(sql,
+                new SqlParameter("@IdPantalla", 1),
+                new SqlParameter("@IdGeneralLogueado ", 1), //loggedInUserId));
+                new SqlParameter("@idEventoInventario", id)
+            );
 
-            _context.EVENTOSINVENTARIO.Remove(programaLevatamiento);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok(new { mensaje = "Evento eliminado lógicamente." });
         }
 
         private bool ProgramaLevatamientoExists(int id)

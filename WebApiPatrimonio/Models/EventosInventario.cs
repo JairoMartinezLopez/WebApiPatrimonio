@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WebApiPatrimonio.Models
 {
-    [Table("EVENTOSINVENTARIO", Schema = "dbo")] // Especifica el nombre de la tabla y el esquema
-    public class ProgramarEventos
+    [Table("EVENTOSINVENTARIO", Schema = "dbo")]
+    public class EventosInventario
     {
         [Key]
         [Column("idEventoInventario")]
@@ -29,6 +29,6 @@ namespace WebApiPatrimonio.Models
         public bool? Activo { get; set; }
 
         [Column("Folio")]
-        public bool? Folio { get; set; }
+        public string? Folio { get; set; }
     }
 }
