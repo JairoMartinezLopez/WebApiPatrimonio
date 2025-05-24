@@ -136,6 +136,41 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+        [HttpPut("CambiarEstado")]
+        public async Task<IActionResult> PutEstdoLevatamiento([FromBody] EventosInventario request)
+        {
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_UPD_EVENTOSINVENTARIO_ESTADO";
+
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
+            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@idEventoInventario", request.IdEventoInventario));
+            command.Parameters.Add(new SqlParameter("@idEventoEstado", request.idEventoEstado));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "El estado del evento a sido modificado correctamente." });
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
         // POST: api/ProgramaLevatamiento
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
