@@ -268,6 +268,52 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+        [HttpDelete("baja-bienes")]
+        public async Task<ActionResult> DarBajaMasivaBienes([FromBody] BienesBaja request)
+        {
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_BAJA_BIENES_MASIVA";
+
+            // Parámetros de entrada del procedimiento almacenado
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1115));
+            command.Parameters.Add(new SqlParameter("@idCausalBaja", request.IdCausalBaja));
+            command.Parameters.Add(new SqlParameter("@FechaBaja", request.FechaBaja));
+            command.Parameters.Add(new SqlParameter("@idDisposicionFinal", request.IdDisposicionFinal));
+
+            // Crear el DataTable para el parámetro con valores de tabla
+            DataTable dtNoInventarios = new DataTable();
+            dtNoInventarios.Columns.Add("NoInventario", typeof(string));
+
+            foreach (var bien in request.BienesABajar)
+            {
+                dtNoInventarios.Rows.Add(bien.NoInventario);
+            }
+
+            // Agregar el parámetro con valores de tabla
+            SqlParameter tvpParam = new SqlParameter("@ListaNoInventario", dtNoInventarios);
+            tvpParam.SqlDbType = SqlDbType.Structured; // Indicar que es un Table-Valued Parameter
+            tvpParam.TypeName = "dbo.TipoListaNoInventario"; // El nombre del tipo de tabla que creaste en SQL Server
+            command.Parameters.Add(tvpParam);
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "Baja masiva de bienes realizada con éxito." });
+            }
+            catch (SqlException ex)
+            {
+                // Puedes parsear el mensaje de error para dar una respuesta más específica si es necesario
+                // Por ejemplo, si el RAISERROR del SP devuelve un mensaje específico
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
 
         // DELETE: api/Bien/5
         [HttpDelete("eliminar{idBien}")]

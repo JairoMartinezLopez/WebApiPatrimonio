@@ -3,89 +3,21 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WebApiPatrimonio.Models
 {
-    [Table("PAT_LEVANTAMIENTO_INVENTARIO")] 
+    [Table("LEVANTAMIENTOSINVENTARIO")] 
     public class Levantamiento
     {
         [Key]
-        [Column("IdLevantamientoInventario")]
-        public long IdLevantamientoInventario { get; set; }
+        [Column("idLevantamientoInventario")]
+        public long idLevantamientoInventario { get; set; }
 
-        [Column("IdBien")]
-        public long? IdBien { get; set; }
+        [Column("idBien")]
+        public long? idBien { get; set; }
 
-        [Column("IdEventoInventario")]
-        public int? IdEventoInventario { get; set; }
-
-        [Column("idCatBien")]
-        public int? idCatBien { get; set; }
-
-        [Column("idArea")]
-        public int? idArea { get; set; }
-
-        [Column("IdArea_pertenece")]
-        public long? IdArea_pertenece { get; set; }
-
-        [Column("idColor")]
-        public int? idColor { get; set; }
-
-        [Column("FechaRegistro")]
-        public DateTime? FechaRegistro { get; set; }
-
-        [Column("FechaAlta")]
-        public DateTime? FechaAlta { get; set; }
-
-        [Column("Aviso")]
-        [StringLength(50)]
-        public string Aviso { get; set; }
-
-        [Column("Serie")]
-        [StringLength(50)]
-        public string Serie { get; set; }
-
-        [Column("Modelo")]
-        [StringLength(100)]
-        public string Modelo { get; set; }
-
-        [Column("idEstadoFisico")]
-        public int? idEstadoFisico { get; set; }
-
-        [Column("idMarca")]
-        public int? idMarca { get; set; }
-
-        [Column("Costo")]
-        public double? Costo { get; set; }
-
-        [Column("Etiquetado")]
-        public bool? Etiquetado { get; set; }
-
-        [Column("FechaEtiquetado")]
-        public DateTime? FechaEtiquetado { get; set; }
-
-        [Column("Activo")]
-        public bool? Activo { get; set; }
-
-        [Column("Estatus")]
-        public bool? Estatus { get; set; }
-
-        [Column("idFactura")]
-        public long? idFactura { get; set; }
-
-        [Column("NoInventario")]
-        [StringLength(30)]
-        public string Nolnventario { get; set; }
+        [Column("idEventoInventario")]
+        public int? idEventoInventario { get; set; }
 
         [Column("Observaciones")]
-        [StringLength(200)]
         public string Observaciones { get; set; }
-
-        [Column("IdCategoria")]
-        public int? IdCategoria { get; set; }
-
-        [Column("idFinanciamiento")]
-        public int? idFinanciamiento { get; set; }
-
-        [Column("IdGeneral")]
-        public long? IdGeneral { get; set; }
 
         [Column("ExisteElBien")]
         public int? ExisteElBien { get; set; }
@@ -93,10 +25,24 @@ namespace WebApiPatrimonio.Models
         [Column("FechaVerificacion")]
         public DateTime? FechaVerificacion { get; set; }
 
-        [Column("OrigenRegistro")]
-        public int? OrigenRegistro { get; set; }
-
         [Column("FueActualizado")]
+        public bool? FueActualizado { get; set; }
+    }
+
+    public class LevantamientoMasivo
+    {
+        public int IdPantalla { get; set; }
+        public int IdGeneral { get; set; }
+        public int IdEventoInventario { get; set; }
+        public List<LevantamientoMasivoItem> ListaLevantamientos { get; set; }
+    }
+
+    public class LevantamientoMasivoItem
+    {
+        public long IdBien { get; set; }
+        public string Observaciones { get; set; }
+        public int? ExisteElBien { get; set; }
+        public DateTime? FechaVerificacion { get; set; }
         public bool? FueActualizado { get; set; }
     }
 }

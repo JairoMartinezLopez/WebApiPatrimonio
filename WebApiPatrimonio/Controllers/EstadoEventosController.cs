@@ -1,0 +1,193 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using WebApiPatrimonio.Context;
+using WebApiPatrimonio.Models;
+
+namespace WebApiPatrimonio.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class EstadoEventosController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public EstadoEventosController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        // GET: api/EstadoEventos
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<EstadoEvento>>> GetESTADOEVENTOS()
+        {
+            return await _context.ESTADOEVENTOS.ToListAsync();
+        }
+
+        // GET: api/EstadoEventos/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<EstadoEvento>> GetEstadoEvento(int id)
+        {
+            var estadoEvento = await _context.ESTADOEVENTOS.FindAsync(id);
+
+            if (estadoEvento == null)
+            {
+                return NotFound();
+            }
+
+            return estadoEvento;
+        }
+
+        [HttpGet("filtar")]
+        public async Task<ActionResult<IEnumerable<EstadoEvento>>> filtrarEstadoEventos(
+            [FromQuery] string? nombre,
+            [FromQuery] string? descripcion,
+            [FromQuery] string? clave,
+            [FromQuery] bool? activo,
+            [FromQuery] bool? bloqueado)
+        {
+            var query = _context.ESTADOEVENTOS.AsQueryable();
+
+            if (!string.IsNullOrEmpty(nombre))
+                query = query.Where(u => u.Nombre.Contains(nombre));
+
+            if (!string.IsNullOrEmpty(descripcion))
+                query = query.Where(u => u.Descripcion.Contains(descripcion));
+
+            if (!string.IsNullOrEmpty(clave))
+                query = query.Where(u => u.Clave.Contains(clave));
+
+            if (activo.HasValue)
+                query = query.Where(u => u.Activo == activo);
+
+            if (bloqueado.HasValue)
+                query = query.Where(u => u.Bloqueado == bloqueado);
+
+            var estados = await query
+                .Select(u => new EstadoEvento
+                {
+                    IdEventoEstado = u.IdEventoEstado,
+                    Clave = u.Clave,
+                    Nombre = u.Nombre,
+                    Descripcion = u.Descripcion,
+                    Activo = u.Activo,
+                    Bloqueado = u.Bloqueado
+                })
+                .ToListAsync();
+
+            return Ok(estados);
+        }
+
+        // PUT: api/EstadoEventos/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPut]
+        public async Task<IActionResult> PutEstadoEvento([FromBody] EstadoEvento request)
+        {
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_UPD_EVENTOSESTADO";
+
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1115));//loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@idEventoEstado", request.IdEventoEstado));
+            command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre)); 
+            command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
+            command.Parameters.Add(new SqlParameter("@Descripcion", request.Descripcion ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Clave", request.Clave ?? (object)DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "El Estado de evento a sido modificado correctamente." });
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
+        // POST: api/EstadoEventos
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPost]
+        public async Task<ActionResult<EstadoEvento>> PostEstadoEvento(EstadoEvento request)
+        {
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = System.Data.CommandType.StoredProcedure;
+            command.CommandText = "PA_INS_EVENTOSESTADO";
+
+            command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1));//loggedInUserId));
+            command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
+            command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
+            command.Parameters.Add(new SqlParameter("@Descripcion", request.Descripcion));
+            command.Parameters.Add(new SqlParameter("@Clave", request.Clave));
+            command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "Eveento estado insertado correctamente." });
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
+        [HttpDelete("{idEstadoEvento}")]
+        public async Task<IActionResult> DeleteEventoEstado(int idEstadoEvento)
+        {
+            // Obtener el ID del usuario autenticado
+            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
+            {
+                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
+            }*/
+
+            var sql = "EXEC PA_DEL_EVENTOSESTADO @IdPantalla, @IdGeneral, @idEventoEstado";
+            var result = await _context.Database.ExecuteSqlRawAsync(sql,
+                new SqlParameter("@IdPantalla", 1),
+                new SqlParameter("@IdGeneral", 1), //loggedInUserId));
+                new SqlParameter("@idEventoEstado", idEstadoEvento)
+            );
+
+            return Ok(new { mensaje = "Estado de evento eliminado lógicamente." });
+        }
+
+        private bool EstadoEventoExists(int id)
+        {
+            return _context.ESTADOEVENTOS.Any(e => e.IdEventoEstado == id);
+        }
+    }
+}
