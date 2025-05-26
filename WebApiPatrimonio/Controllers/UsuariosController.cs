@@ -129,7 +129,7 @@ namespace WebApiPatrimonio.Controllers
 
             command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@idGeneral", 1)); //loggedInUserId));
+            command.Parameters.Add(new SqlParameter("@idGeneral", request.IdGeneralUsuario));
             command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
             command.Parameters.Add(new SqlParameter("@Apellidos", request.Apellidos));
             command.Parameters.Add(new SqlParameter("@idRol", request.idRol));
@@ -171,7 +171,7 @@ namespace WebApiPatrimonio.Controllers
             command.CommandType = CommandType.StoredProcedure;
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@IdGeneralUsuario", 1));//loggedInUserId));
+            command.Parameters.Add(new SqlParameter("@IdGeneralUsuario",request.IdGeneralUsuario));
             command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
             command.Parameters.Add(new SqlParameter("@Apellidos", request.Apellidos));
             command.Parameters.Add(new SqlParameter("@Password", request.Password));
@@ -201,20 +201,14 @@ namespace WebApiPatrimonio.Controllers
         [HttpDelete]
         public async Task<IActionResult> EliminarUsuario([FromBody] UsuarioModel request)
         {
-            // Obtener el ID del usuario autenticado
-            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
-            {
-                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
-            }*/
-
+        
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandText = "PA_DEL_USUARIO";
             command.CommandType = CommandType.StoredProcedure;
 
             command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@idGeneral", 1));//loggedInUserId));
+            command.Parameters.Add(new SqlParameter("@idGeneral", request.idUsuario));
 
             try
             {
@@ -236,12 +230,7 @@ namespace WebApiPatrimonio.Controllers
         [HttpPut("ResetPasswordSP/{idUsuario}")]
         public async Task<IActionResult> ResetPasswordSP(int idUsuario)
         {
-            // Obtener el ID del usuario autenticado
-            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
-            {
-                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
-            }*/
+          
             var nuevaPassword = GenerarContraseña();
 
             var parametros = new[]
