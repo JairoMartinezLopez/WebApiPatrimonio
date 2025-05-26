@@ -346,25 +346,31 @@ namespace WebApiPatrimonio.Controllers
         [HttpPut("Etiquetado")]
         public async Task<IActionResult> Etiquetado(int idBien)
         {
-            var nuevoEstadoParam = new SqlParameter("@NuevoEstadoPublicar", System.Data.SqlDbType.Bit)
+            var nuevoEstadoParam = new SqlParameter("@NuevoEstadoEtiquetado", System.Data.SqlDbType.Bit)
             {
                 Direction = System.Data.ParameterDirection.Output
             };
 
             var sql = "EXEC PA_ETIQUETADO_BIENES @idBien, @IdPantalla, @IdGeneral, @NuevoEstadoEtiquetado OUTPUT";
 
-            await _context.Database.ExecuteSqlRawAsync(sql,
-                new SqlParameter("@idBien", idBien),
-                new SqlParameter("@IdPantalla", 1),
-                new SqlParameter("@IdGeneral", 1),
-                nuevoEstadoParam);
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync(sql,
+                    new SqlParameter("@idBien", idBien),
+                    new SqlParameter("@IdPantalla", 1),
+                    new SqlParameter("@IdGeneral", 1),
+                    nuevoEstadoParam); 
 
-            // Obtener el valor del parámetro de salida
-            bool nuevoEstado = (bool)nuevoEstadoParam.Value;
+                bool nuevoEstado = nuevoEstadoParam.Value != DBNull.Value ? (bool)nuevoEstadoParam.Value : false;
 
-            string mensaje = nuevoEstado ? "BIEN Etiquetado correctamente." : "BIEN sin etiquetado correctamente.";
-            
-            return Ok(new { mensaje });
+                string mensaje = nuevoEstado ? "BIEN Etiquetado correctamente." : "BIEN sin etiquetado correctamente.";
+
+                return Ok(new { mensaje });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al actualizar el estado de etiquetado: {ex.Message}");
+            }
         }
 
         [HttpGet("GenerarQRBienesPDF")]
