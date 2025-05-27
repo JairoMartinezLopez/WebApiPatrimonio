@@ -410,12 +410,20 @@ namespace WebApiPatrimonio.Controllers
                 var bold = new XFont("Arial", 9, XFontStyle.Bold);
                 var titleFont = new XFont("Arial", 11, XFontStyle.Bold);
 
-                int etiquetasPorPagina = 4;
+                double anchoPaginaA4 = PdfSharpCore.PageSizeConverter.ToSize(PdfSharpCore.PageSize.A4).Width;
+
+                int columnas = 2;
+                int filasPorColumna = 4;
+                int etiquetasPorPagina = columnas * filasPorColumna;
+
                 double etiquetaAncho = 260;
                 double etiquetaAlto = 180;
+
                 double margenX = 30;
                 double margenY = 30;
-                double espaciadoY = 20;
+
+                double espaciadoHorizontal = (anchoPaginaA4 - (2 * margenX) - (columnas * etiquetaAncho)) / (columnas - 1);
+                double espaciadoVertical = 20;
 
                 int index = 0;
 
@@ -427,8 +435,11 @@ namespace WebApiPatrimonio.Controllers
 
                     for (int i = 0; i < etiquetasPorPagina && index < listaBienes.Count; i++)
                     {
-                        double x = margenX;
-                        double y = margenY + i * (etiquetaAlto + espaciadoY);
+                        int columnaActual = i % columnas;
+                        int filaActual = i / columnas;
+
+                        double x = margenX + (columnaActual * (etiquetaAncho + espaciadoHorizontal));
+                        double y = margenY + (filaActual * (etiquetaAlto + espaciadoVertical));
 
                         // Fondo gris MUY claro
                         var fondoClaro = new XSolidBrush(XColor.FromArgb(240, 240, 240));
@@ -460,7 +471,6 @@ namespace WebApiPatrimonio.Controllers
                             gfx.DrawString($"{label}", bold, XBrushes.Black, new XPoint(textoX, textoY));
                             textoY += 12;
 
-                            // Si es largo, dividir
                             const int maxLineLength = 30;
                             while (value.Length > maxLineLength)
                             {
