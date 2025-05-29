@@ -208,6 +208,52 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+        // GET: api/LevantamientosInventario/bienEventos
+        [HttpGet("bienesPorArea/{idEventoInventario}")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> ObtenerBienesPorAreaEvento(int idEventoInventario)
+        {
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_SEL_BIENES_POR_AREA_EVENTO";
+
+            command.Parameters.Add(new SqlParameter("@idEventoInventario", idEventoInventario));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                using var reader = await command.ExecuteReaderAsync();
+                var resultados = new List<dynamic>(); // O crea una clase DTO para BienesAverificarDto
+                while (await reader.ReadAsync())
+                {
+                    resultados.Add(new
+                    {
+                        idBien = reader["idBien"],
+                        NoInventario = reader["NoInventario"],
+                        Serie = reader["Serie"],
+                        Modelo = reader["Modelo"],
+                        Observaciones = reader["Observaciones"], // Observaciones del bien
+                        Activo = reader["Activo"],
+                        Disponibilidad = reader["Disponibilidad"],
+                        //idLevantamientoInventario = reader["idLevantamientoInventario"],
+                        //ExisteElBien = reader["ExisteElBien"],
+                        //FechaVerificacion = reader["FechaVerificacion"],
+                        //FueActualizado = reader["FueActualizado"],
+                       // ObservacionesLevantamiento = reader["ObservacionesLevantamiento"], // Observaciones de la verificación
+                        YaVerificado = reader["YaVerificado"]
+                    });
+                }
+                return Ok(resultados);
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
         // GET: api/LevantamientosInventario/progreso/{idEventoInventario}
         [HttpGet("progreso/{idEventoInventario}")]
         public async Task<ActionResult<IEnumerable<dynamic>>> ObtenerProgresoInventario(int idEventoInventario)
