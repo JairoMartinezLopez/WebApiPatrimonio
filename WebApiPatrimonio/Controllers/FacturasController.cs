@@ -85,19 +85,19 @@ namespace WebApiPatrimonio.Controllers
             {
                 new SqlParameter("@IdPantalla",           1),
                 new SqlParameter("@IdGeneral",            1),
-                new SqlParameter("@NumeroFactura",  dto.NumeroFactura  ?? (object)DBNull.Value),
-                new SqlParameter("@FolioFiscal",    dto.FolioFiscal    ?? (object)DBNull.Value),
-                new SqlParameter("@FechaFactura",   dto.FechaFactura   ?? (object)DBNull.Value),
-                new SqlParameter("@idFinanciamiento",   dto.idFinanciamiento   ?? (object)DBNull.Value),
-                new SqlParameter("@idUnidadResponsable",dto.idUnidadResponsable?? (object)DBNull.Value),
-                new SqlParameter("@idEstado",           dto.idEstado          ?? (object)DBNull.Value),
-                new SqlParameter("@Nota",          dto.Nota          ?? (object)DBNull.Value),
-                new SqlParameter("@Publicar",      dto.Publicar      ?? (object)DBNull.Value),
-                new SqlParameter("@Activo",        dto.Activo        ?? (object)DBNull.Value),
-                new SqlParameter("@FechaRegistro", dto.FechaRegistro ?? DateTime.Now),
-                new SqlParameter("@Archivo",      SqlDbType.VarBinary,-1){Value=(object?)fileBytes ?? DBNull.Value},
-                new SqlParameter("@RutaArchivo",  SqlDbType.NVarChar,260){Value=(object?)rutaNas   ?? DBNull.Value},
-                new SqlParameter("@CantidadBienes", dto.CantidadBienes ?? (object)DBNull.Value)
+                new SqlParameter("@NumeroFactura",        dto.NumeroFactura        ?? (object)DBNull.Value),
+                new SqlParameter("@FolioFiscal",          dto.FolioFiscal          ?? (object)DBNull.Value),
+                new SqlParameter("@FechaFactura",         dto.FechaFactura         ?? (object)DBNull.Value),
+                new SqlParameter("@idFinanciamiento",     dto.idFinanciamiento     ?? (object)DBNull.Value),
+                new SqlParameter("@idUnidadResponsable",  dto.idUnidadResponsable  ?? (object)DBNull.Value),
+                new SqlParameter("@idEstado",             dto.idEstado             ?? (object)DBNull.Value),
+                new SqlParameter("@Nota",                 dto.Nota                 ?? (object)DBNull.Value),
+                new SqlParameter("@Publicar",             dto.Publicar             ?? (object)DBNull.Value),
+                new SqlParameter("@Activo",               dto.Activo               ?? (object)DBNull.Value),
+                new SqlParameter("@FechaRegistro",        dto.FechaRegistro        ?? DateTime.Now),
+                new SqlParameter("@Archivo",              SqlDbType.VarBinary, -1) { Value = (object?)fileBytes ?? DBNull.Value },
+                new SqlParameter("@RutaArchivo",          SqlDbType.NVarChar, 260) { Value = (object?)rutaNas   ?? DBNull.Value },
+                new SqlParameter("@CantidadBienes",       dto.CantidadBienes       ?? (object)DBNull.Value)
             });
 
             try

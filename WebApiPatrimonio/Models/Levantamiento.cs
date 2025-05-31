@@ -45,4 +45,20 @@ namespace WebApiPatrimonio.Models
         public DateTime? FechaVerificacion { get; set; }
         public bool? FueActualizado { get; set; }
     }
+
+    public class LevantamientoUpdateItem
+    {
+        public long IdLevantamientoInventario { get; set; }
+        public string Observaciones { get; set; }
+        public int? ExisteElBien { get; set; } // int? para coincidir con tu modelo y lógica de BIT
+        public DateTime? FechaVerificacion { get; set; }
+        public bool? FueActualizado { get; set; }
+    }
+
+    public class LevantamientoMasivoUpdate
+    {
+        public int IdPantalla { get; set; }
+        public int IdGeneral { get; set; }
+        public List<LevantamientoUpdateItem> ListaLevantamientos { get; set; }
+    }
 }
