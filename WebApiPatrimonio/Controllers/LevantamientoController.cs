@@ -154,6 +154,63 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+        // PUT: api/LevantamientosInventario/actualizar-masivo
+        [HttpPut("actualizar-masivo")]
+        public async Task<ActionResult> ActualizarLevantamientosMasivos([FromBody] LevantamientoMasivoUpdate request)
+        {
+            if (request == null || !request.ListaLevantamientos.Any())
+            {
+                return BadRequest(new { error = "La solicitud debe contener al menos un levantamiento para actualizar." });
+            }
+
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_UPD_LEVANTAMIENTOSINVENTARIO_MASIVO";
+
+            command.Parameters.Add(new SqlParameter("@IdPantalla", request.IdPantalla));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", request.IdGeneral));
+
+            // Crear el DataTable para el parámetro con valores de tabla
+            DataTable dtLevantamientos = new DataTable();
+            dtLevantamientos.Columns.Add("idLevantamientoInventario", typeof(long));
+            dtLevantamientos.Columns.Add("Observaciones", typeof(string));
+            dtLevantamientos.Columns.Add("ExisteElBien", typeof(int)); // Coincide con int? en tu modelo y TVP INT
+            dtLevantamientos.Columns.Add("FechaVerificacion", typeof(DateTime));
+            dtLevantamientos.Columns.Add("FueActualizado", typeof(bool)); // Coincide con bool? en tu modelo y TVP BIT
+
+            foreach (var item in request.ListaLevantamientos)
+            {
+                dtLevantamientos.Rows.Add(
+                    item.IdLevantamientoInventario,
+                    (object)item.Observaciones ?? DBNull.Value,
+                    (object?)item.ExisteElBien ?? DBNull.Value,
+                    (object?)item.FechaVerificacion ?? DBNull.Value,
+                    (object?)item.FueActualizado ?? DBNull.Value
+                );
+            }
+
+            SqlParameter tvpParam = new SqlParameter("@ListaLevantamientos", dtLevantamientos);
+            tvpParam.SqlDbType = SqlDbType.Structured;
+            tvpParam.TypeName = "dbo.TipoLevantamientoInventarioUpdate"; // Asegúrate de que este nombre sea exacto al TVP en SQL Server
+            command.Parameters.Add(tvpParam);
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "Levantamientos de inventario actualizados masivamente correctamente." });
+            }
+            catch (SqlException ex)
+            {
+                // Captura y devuelve el mensaje de error de SQL Server, incluyendo los RAISERROR del SP
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
         // POST: api/LevantamientosInventario/insertar-masivo
         [HttpPost("insertar-masivo")]
         public async Task<ActionResult> InsertarLevantamientosMasivos([FromBody] LevantamientoMasivo request)
@@ -235,7 +292,7 @@ namespace WebApiPatrimonio.Controllers
                         Activo = reader["Activo"],
                         Disponibilidad = reader["Disponibilidad"],
                         //idLevantamientoInventario = reader["idLevantamientoInventario"],
-                        //ExisteElBien = reader["ExisteElBien"],
+                        ExisteElBien = reader["ExisteElBien"],
                         //FechaVerificacion = reader["FechaVerificacion"],
                         //FueActualizado = reader["FueActualizado"],
                        // ObservacionesLevantamiento = reader["ObservacionesLevantamiento"], // Observaciones de la verificación
@@ -285,6 +342,48 @@ namespace WebApiPatrimonio.Controllers
                         PorcentajeVerificado = reader["PorcentajeVerificado"],
                         CantidadFaltantes = reader["CantidadFaltantes"],
                         CantidadSobrantes = reader["CantidadSobrantes"]
+                    });
+                }
+                return Ok(resultados);
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
+        // GET: api/LevantamientosInventario/bienes-comprobados/{idEventoInventario}
+        [HttpGet("bienes-comprobados/{idEventoInventario}")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> ObtenerBienesComprobadosEnInventario(int idEventoInventario)
+        {
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_SEL_BIENES_COMPROBADOS_EN_INVENTARIO";
+
+            command.Parameters.Add(new SqlParameter("@idEventoInventario", idEventoInventario));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                using var reader = await command.ExecuteReaderAsync();
+                var resultados = new List<dynamic>();
+                while (await reader.ReadAsync())
+                {
+                    resultados.Add(new
+                    {
+                        idLevantamientoInventario = reader["idLevantamientoInventario"],
+                        idBien = reader["idBien"],
+                        NoInventario = reader["NoInventario"],
+                        Marca = reader["Marca"],
+                        Modelo = reader["Modelo"],
+                        Serie = reader["Serie"],
+                        ObservacionesLevantamiento = reader["ObservacionesLevantamiento"],
+                        FechaVerificacion = reader["FechaVerificacion"],
+                        AreaDelEvento = reader["AreaDelEvento"]
                     });
                 }
                 return Ok(resultados);
