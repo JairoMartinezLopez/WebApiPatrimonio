@@ -105,7 +105,7 @@ namespace WebApiPatrimonio.Controllers
             command.CommandType = CommandType.StoredProcedure;
             command.CommandText = "PA_UPD_TRANSFERENCIA";
 
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado", 1115)); // Este es el usuario logueado
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1115)); // Este es el usuario logueado
             command.Parameters.Add(new SqlParameter("@idTransferencia", request.idTransferencia));
             command.Parameters.Add(new SqlParameter("@Folio", request.Folio));
             command.Parameters.Add(new SqlParameter("@FechaRegistro", request.FechaRegistro));
@@ -114,7 +114,7 @@ namespace WebApiPatrimonio.Controllers
             command.Parameters.Add(new SqlParameter("@Activo", (object?)request.Activo ?? DBNull.Value));
             command.Parameters.Add(new SqlParameter("@idAreaOrigen", request.idAreaOrigen));
             command.Parameters.Add(new SqlParameter("@idAreaDestino", request.idAreaDestino));
-            command.Parameters.Add(new SqlParameter("@idGeneral", request.idGeneral)); // Este es el usuario asociado a la transferencia
+            command.Parameters.Add(new SqlParameter("@IdGeneralAsignado", request.idGeneral)); // Este es el usuario asociado a la transferencia
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
             
             try
@@ -142,7 +142,7 @@ namespace WebApiPatrimonio.Controllers
             command.CommandType = CommandType.StoredProcedure;
             command.CommandText = "PA_INS_TRANSFERENCIA";
 
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado", 1115));// Este es el usuario logueado
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1115));// Este es el usuario logueado
             command.Parameters.Add(new SqlParameter("@Folio", request.Folio));
             command.Parameters.Add(new SqlParameter("@FechaRegistro", request.FechaRegistro));
             command.Parameters.Add(new SqlParameter("@Observaciones", (object?)request.Observaciones ?? DBNull.Value));
@@ -150,7 +150,7 @@ namespace WebApiPatrimonio.Controllers
             command.Parameters.Add(new SqlParameter("@Activo", (object?)request.Activo ?? DBNull.Value));
             command.Parameters.Add(new SqlParameter("@idAreaOrigen", request.idAreaOrigen));
             command.Parameters.Add(new SqlParameter("@idAreaDestino", request.idAreaDestino));
-            command.Parameters.Add(new SqlParameter("@idGeneral", request.idGeneral)); // Este es el usuario asociado a la transferencia
+            command.Parameters.Add(new SqlParameter("@IdGeneralAsignado", request.idGeneral)); // Este es el usuario asociado a la transferencia
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
 
             try
@@ -178,7 +178,7 @@ namespace WebApiPatrimonio.Controllers
             command.CommandText = "PA_DEL_TRANSFERENCIA";
 
             command.Parameters.Add(new SqlParameter("@idTransferencia", id));
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado", 1)); // Este es el usuario logueado
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1)); // Este es el usuario logueado
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
 
             try

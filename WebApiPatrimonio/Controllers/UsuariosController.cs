@@ -129,7 +129,7 @@ namespace WebApiPatrimonio.Controllers
 
             command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@idGeneral", request.IdGeneralUsuario));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", request.IdGeneralUsuario));
             command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
             command.Parameters.Add(new SqlParameter("@Apellidos", request.Apellidos));
             command.Parameters.Add(new SqlParameter("@idRol", request.idRol));
@@ -171,11 +171,11 @@ namespace WebApiPatrimonio.Controllers
             command.CommandType = CommandType.StoredProcedure;
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@IdGeneralUsuario",request.IdGeneralUsuario));
+            command.Parameters.Add(new SqlParameter("@IdGeneral",request.IdGeneralUsuario));
             command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
             command.Parameters.Add(new SqlParameter("@Apellidos", request.Apellidos));
             command.Parameters.Add(new SqlParameter("@Password", request.Password));
-            command.Parameters.Add(new SqlParameter("@idGeneral", request.idGeneral));
+            command.Parameters.Add(new SqlParameter("@idGeneralUsuario", request.idGeneral));
             command.Parameters.Add(new SqlParameter("@idRol", request.idRol));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
             command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));
@@ -208,7 +208,7 @@ namespace WebApiPatrimonio.Controllers
 
             command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@idGeneral", request.idUsuario));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", request.idUsuario));
 
             try
             {
