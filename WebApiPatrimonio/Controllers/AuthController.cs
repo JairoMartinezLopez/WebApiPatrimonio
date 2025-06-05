@@ -52,22 +52,22 @@ namespace WebApiPatrimonio.Controllers
 
                     // Extraer datos del usuario desde el SP
                     var idUsuario = Convert.ToInt32(reader["idUsuario"]);
-                    var nombre = reader["Nombre"].ToString();
-                    var apellidos = reader["Apellidos"].ToString();
+                    var nombreUsuario = reader["NombreUsuario"].ToString();
+                    var nombreApellidos = reader["NombreApellidos"].ToString();
                     var idGeneral = Convert.ToInt32(reader["idGeneral"]);
                     var idRol = Convert.ToInt32(reader["idRol"]);
                     var rolNombre = reader["RolNombre"].ToString();
                     var activo = Convert.ToBoolean(reader["Activo"]);
 
                     // Generar token JWT
-                    var token = GenerarToken(idGeneral, nombre, rolNombre);
+                    var token = GenerarToken(idGeneral, nombreUsuario, rolNombre);
 
                     return Ok(new
                     {
                         token,
                         idUsuario,
-                        nombre,
-                        apellidos,
+                        nombreUsuario,
+                        nombreApellidos,
                         idGeneral,
                         idRol,
                         rolNombre,
@@ -88,12 +88,12 @@ namespace WebApiPatrimonio.Controllers
         }
 
 
-        private string GenerarToken(int idGeneral, string nombre, string rol)
+        private string GenerarToken(int idGeneral, string nombreUsuario, string rol)
         {
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, idGeneral.ToString()),
-                new Claim(ClaimTypes.Name, nombre),
+                new Claim(ClaimTypes.Name, nombreUsuario),
                 new Claim(ClaimTypes.Role, rol)
             };
 

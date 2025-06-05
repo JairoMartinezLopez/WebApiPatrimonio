@@ -31,8 +31,8 @@ namespace WebApiPatrimonio.Controllers
                 .Select(u => new UsuarioModel
                 {
                     idUsuario = u.idUsuario,
-                    Nombre = u.Nombre,
-                    Apellidos = u.Apellidos,
+                    NombreUsuario = u.NombreUsuario,
+                    NombreApellidos = u.NombreApellidos,
                     idGeneral = u.idGeneral,
                     idRol = u.idRol,
                     Activo = u.Activo,
@@ -51,8 +51,8 @@ namespace WebApiPatrimonio.Controllers
                 .Select(u => new UsuarioModel
                 {
                     idUsuario = u.idUsuario,
-                    Nombre = u.Nombre,
-                    Apellidos = u.Apellidos,
+                    NombreUsuario = u.NombreUsuario,
+                    NombreApellidos = u.NombreApellidos,
                     idGeneral = u.idGeneral,
                     idRol = u.idRol,
                     Activo = u.Activo,
@@ -71,7 +71,7 @@ namespace WebApiPatrimonio.Controllers
 
         [HttpGet("filtrar")]
         public async Task<ActionResult<IEnumerable<UsuarioModel>>> FiltrarUsuarios(
-            [FromQuery] string? nombre,
+            [FromQuery] string? nombreUsuario,
             [FromQuery] int? idGeneral,
             [FromQuery] int? idRol,
             [FromQuery] bool? activo,
@@ -79,8 +79,8 @@ namespace WebApiPatrimonio.Controllers
         {
             var query = _context.USUARIOS.AsQueryable();
 
-            if (!string.IsNullOrEmpty(nombre))
-                query = query.Where(u => u.Nombre.Contains(nombre));
+            if (!string.IsNullOrEmpty(nombreUsuario))
+                query = query.Where(u => u.NombreUsuario.Contains(nombreUsuario));
 
             if (idGeneral.HasValue)
                 query = query.Where(u => u.idGeneral == idGeneral);
@@ -98,8 +98,8 @@ namespace WebApiPatrimonio.Controllers
                 .Select(u => new UsuarioModel
                 {
                     idUsuario = u.idUsuario,
-                    Nombre = u.Nombre,
-                    Apellidos = u.Apellidos,
+                    NombreUsuario = u.NombreUsuario,
+                    NombreApellidos = u.NombreApellidos,
                     idGeneral = u.idGeneral,
                     idRol = u.idRol,
                     Activo = u.Activo,
@@ -130,8 +130,8 @@ namespace WebApiPatrimonio.Controllers
             command.Parameters.Add(new SqlParameter("@idUsuario", request.idUsuario));
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
             command.Parameters.Add(new SqlParameter("@IdGeneral", request.IdGeneralUsuario));
-            command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
-            command.Parameters.Add(new SqlParameter("@Apellidos", request.Apellidos));
+            command.Parameters.Add(new SqlParameter("@NombreUsuario", request.NombreUsuario));
+            command.Parameters.Add(new SqlParameter("@NombreApellidos", request.NombreApellidos));
             command.Parameters.Add(new SqlParameter("@idRol", request.idRol));
             command.Parameters.Add(new SqlParameter("@Activo", request.Activo));
             command.Parameters.Add(new SqlParameter("@Bloqueado", request.Bloqueado));
@@ -172,8 +172,8 @@ namespace WebApiPatrimonio.Controllers
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
             command.Parameters.Add(new SqlParameter("@IdGeneral",request.IdGeneralUsuario));
-            command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
-            command.Parameters.Add(new SqlParameter("@Apellidos", request.Apellidos));
+            command.Parameters.Add(new SqlParameter("@NombreUsuario", request.NombreUsuario));
+            command.Parameters.Add(new SqlParameter("@NombreApellidos", request.NombreApellidos));
             command.Parameters.Add(new SqlParameter("@Password", request.Password));
             command.Parameters.Add(new SqlParameter("@idGeneralUsuario", request.idGeneral));
             command.Parameters.Add(new SqlParameter("@idRol", request.idRol));

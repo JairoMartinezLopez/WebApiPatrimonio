@@ -27,7 +27,8 @@ public class CatService : ICatService
         string? Pk,
         string? SpIns,
         string? SpUpd,
-        string? SpDel);
+        string? SpDel,
+        string? SpSelect);
 
     public CatService(IConfiguration cfg, IHttpContextAccessor http)
     {
@@ -43,7 +44,8 @@ public class CatService : ICatService
                    ISNULL(PkName   ,'') AS Pk,
                    ISNULL(SpInsert ,'') AS SpIns,
                    ISNULL(SpUpdate ,'') AS SpUpd,
-                   ISNULL(SpDelete ,'') AS SpDel
+                   ISNULL(SpDelete ,'') AS SpDel,
+                   ISNULL(SpSelect ,'') AS SpSelect
             FROM   CAT_PANTALLAS_CFG
             WHERE  Activo = 1
             """)
@@ -165,32 +167,39 @@ public class CatService : ICatService
 
         await using var cnn = new SqlConnection(_cfg.GetConnectionString("Conexion"));
 
-        if (cfg.Tipo == "PROC")
-        {
-            var p = new DynamicParameters();
-            foreach (var (k, v) in qs) p.Add($"@{k}", v.ToString());
+        var d = new DynamicParameters();
+        foreach (var (k, v) in qs)
+            d.Add($"@{k}", v.ToString());
 
-            var rows = await cnn.QueryAsync(cfg.ObjetoSQL, p, commandType: CommandType.StoredProcedure);
+        // ✅ Usa SP personalizado si existe
+        if (!string.IsNullOrWhiteSpace(cfg.SpSelect))
+        {
+            var rows = await cnn.QueryAsync(cfg.SpSelect, d, commandType: CommandType.StoredProcedure);
             return rows.Select(r => (IDictionary<string, object>)r).ToList();
         }
 
+        // 🔁 Si tipo = PROC usa SP de lectura tradicional (compatibilidad)
+        if (cfg.Tipo == "PROC")
+        {
+            var rows = await cnn.QueryAsync(cfg.ObjetoSQL, d, commandType: CommandType.StoredProcedure);
+            return rows.Select(r => (IDictionary<string, object>)r).ToList();
+        }
+
+        // 🧱 Para tabla o vista (consulta directa)
         var cols = await GetColumnsAsync(pantalla);
         var where = new List<string>();
-        var dp = new DynamicParameters();
 
         foreach (var (k, v) in qs)
             if (cols.Any(c => c.Name.Equals(k, StringComparison.OrdinalIgnoreCase)))
-            {
                 where.Add($"{k} = @{k}");
-                dp.Add($"@{k}", v.ToString());
-            }
 
         var sql = $"SELECT * FROM [{cfg.ObjetoSQL}]" +
                   (where.Count > 0 ? " WHERE " + string.Join(" AND ", where) : "");
 
-        var res = await cnn.QueryAsync(sql, dp);
+        var res = await cnn.QueryAsync(sql, d);
         return res.Select(r => (IDictionary<string, object>)r).ToList();
     }
+
 
     public async Task UpsertAsync(string pantalla, JObject payload)
     {

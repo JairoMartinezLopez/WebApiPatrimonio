@@ -7,8 +7,8 @@ namespace WebApiPatrimonio.Models
         [Key]
         public int idUsuario { get; set; }
         public int IdGeneralUsuario { get; set; }
-        public string? Nombre { get; set; }
-        public string? Apellidos { get; set; }
+        public string? NombreUsuario { get; set; }
+        public string? NombreApellidos { get; set; }
         public string? Password { get; set;  }
         public int idGeneral { get; set; }
         public int idRol { get; set; }
