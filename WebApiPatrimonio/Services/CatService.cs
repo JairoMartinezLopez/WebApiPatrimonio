@@ -63,10 +63,10 @@ public class CatService : ICatService
     public async Task<Dictionary<string, List<ListItem>>> GetForaneasAsync(string pantalla)
     {
         const string sqlRel = """
-            SELECT Columna, TablaDestino, Valor, Texto
-            FROM   CAT_PANTALLAS_FORANEAS
-            WHERE  Activo = 1 AND Pantalla = @pantalla;
-        """;
+        SELECT Columna, TablaDestino, Valor, Texto
+        FROM   CAT_PANTALLAS_FORANEAS
+        WHERE  Activo = 1 AND Pantalla = @pantalla;
+    """;
 
         await using var cnn = new SqlConnection(_cfg.GetConnectionString("Conexion"));
         var rels = await cnn.QueryAsync(sqlRel, new { pantalla });
@@ -75,18 +75,46 @@ public class CatService : ICatService
 
         foreach (var rel in rels)
         {
-            var datos = await cnn.QueryAsync($"""
+            try
+            {
+                // Valida existencia de columnas en tiempo de ejecución
+                string query = $"""
                 SELECT [{rel.Valor}] AS Val, [{rel.Texto}] AS Lab
                 FROM   [{rel.TablaDestino}]
-                WHERE  Activo = 1 AND Bloqueado = 0;
-            """);
+                WHERE  1 = 1
+            """;
 
-            result[(string)rel.Columna] = datos
-                .Select(r => new ListItem(r.Val, r.Lab))
-                .ToList();
+                // Validar columnas antes de aplicar filtros
+                var checkCols = $"""
+                SELECT COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = @table
+            """;
+
+                var cols = (await cnn.QueryAsync<string>(checkCols, new { table = (string)rel.TablaDestino })).ToList();
+
+                if (cols.Contains("Activo", StringComparer.OrdinalIgnoreCase))
+                    query += " AND Activo = 1";
+                if (cols.Contains("Bloqueado", StringComparer.OrdinalIgnoreCase))
+                    query += " AND Bloqueado = 0";
+
+                var datos = await cnn.QueryAsync(query);
+
+                result[(string)rel.Columna] = datos
+                    .Select(r => new ListItem(r.Val, r.Lab))
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                // Agrega una entrada vacía para evitar romper el frontend
+                result[(string)rel.Columna] = new List<ListItem>();
+                Console.WriteLine($"Error cargando foránea {rel.Columna}: {ex.Message}");
+            }
         }
+
         return result;
     }
+
 
     /* ─────────── GetColumnsAsync ─────────── */
     public async Task<IEnumerable<ColMeta>> GetColumnsAsync(string pantalla)
