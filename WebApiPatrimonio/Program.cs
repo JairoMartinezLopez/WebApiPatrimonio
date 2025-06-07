@@ -15,6 +15,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ─────────── Kestrel (50 MB) ───────────
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 52_428_800);
+builder.WebHost.UseKestrel(serverOptions =>
+{
+    serverOptions.ListenAnyIP(5206); // HTTP
+    serverOptions.ListenAnyIP(7049, listenOptions => // HTTPS
+    {
+        listenOptions.UseHttps();
+        // listenOptions.UseHttps(o => {
+        //     o.ServerCertificateSelector = (context, name) => {
+        //         return CertificateLoader.LoadDevelopmentCertificate();
+        //     };
+        // });
+    });
+});
 
 // ─────────── DbContext ───────────
 var cnn = builder.Configuration.GetConnectionString("Conexion")
@@ -98,7 +111,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
