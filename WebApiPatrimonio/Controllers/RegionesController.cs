@@ -97,8 +97,8 @@ namespace WebApiPatrimonio.Controllers
             command.CommandText = "PA_UPD_REGIONES";
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 6));
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado", 1115)); // Este es el usuario logueado
-            command.Parameters.Add(new SqlParameter("@IdGeneral", request.idGeneral)); //Este es el usuario asignado a la región
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1115)); // Este es el usuario logueado
+            command.Parameters.Add(new SqlParameter("@IdGeneralAsignado", request.idGeneral)); //Este es el usuario asignado a la región
             command.Parameters.Add(new SqlParameter("@idRegion", request.idRegion));
             command.Parameters.Add(new SqlParameter("@Clave", (object?)request.Clave ?? DBNull.Value));
             command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
@@ -131,8 +131,8 @@ namespace WebApiPatrimonio.Controllers
             command.CommandText = "PA_INS_REGIONES";
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 4));
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado", 1115)); // Este es el usuario logueado
-            command.Parameters.Add(new SqlParameter("@IdGeneral", request.idGeneral)); //Este es el usuario asignado a la región
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1115)); // Este es el usuario logueado
+            command.Parameters.Add(new SqlParameter("@IdGeneralAsignado", request.idGeneral)); //Este es el usuario asignado a la región
             command.Parameters.Add(new SqlParameter("@Clave", (object?)request.Clave ?? DBNull.Value));
             command.Parameters.Add(new SqlParameter("@Nombre", request.Nombre));
             command.Parameters.Add(new SqlParameter("@Activo", (object?)request.Activo ?? DBNull.Value));
@@ -163,7 +163,7 @@ namespace WebApiPatrimonio.Controllers
             command.CommandText = "PA_DEL_REGIONES";
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado", 1)); // Este es el usuario logueado
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1)); // Este es el usuario logueado
             command.Parameters.Add(new SqlParameter("@idRegion", id));
 
             try

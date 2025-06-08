@@ -185,7 +185,7 @@ namespace WebApiPatrimonio.Controllers
 
             command.Parameters.Add(new SqlParameter("@idRol", request.idRol));
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1));
-            command.Parameters.Add(new SqlParameter("@idGeneral", 1)); //loggedInUserId));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", 1)); //loggedInUserId));
 
             try
             {

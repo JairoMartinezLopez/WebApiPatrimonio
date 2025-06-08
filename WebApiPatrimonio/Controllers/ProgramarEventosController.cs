@@ -110,8 +110,8 @@ namespace WebApiPatrimonio.Controllers
             command.CommandText = "PA_UPD_EVENTOSINVENTARIO";
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
-            command.Parameters.Add(new SqlParameter("@IdGeneral", request.idGeneral));// Este es el usuario asignado al evento
+            command.Parameters.Add(new SqlParameter("@IdGeneral ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@IdGeneralAsignado", request.idGeneral));// Este es el usuario asignado al evento
             command.Parameters.Add(new SqlParameter("@idEventoInventario", request.IdEventoInventario));
             command.Parameters.Add(new SqlParameter("@idArea", request.idArea));
             command.Parameters.Add(new SqlParameter("@FechaInicio", request.FechaInicio));
@@ -151,7 +151,7 @@ namespace WebApiPatrimonio.Controllers
             command.CommandText = "PA_UPD_EVENTOSINVENTARIO_ESTADO";
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@IdGeneral ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
             command.Parameters.Add(new SqlParameter("@idEventoInventario", request.IdEventoInventario));
             command.Parameters.Add(new SqlParameter("@idEventoEstado", request.idEventoEstado));
 
@@ -188,8 +188,8 @@ namespace WebApiPatrimonio.Controllers
             command.CommandText = "PA_INS_EVENTOSINVENTARIO";
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", 1)); // Reemplaza con el ID de pantalla adecuado
-            command.Parameters.Add(new SqlParameter("@IdGeneralLogueado ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
-            command.Parameters.Add(new SqlParameter("@IdGeneral", request.idGeneral));// Este es el usuario asignado al evento
+            command.Parameters.Add(new SqlParameter("@IdGeneral ", 1115)); //loggedInUserId)); // Usar el ID del usuario autenticado
+            command.Parameters.Add(new SqlParameter("@IdGeneralAsignado", request.idGeneral));// Este es el usuario asignado al evento
             command.Parameters.Add(new SqlParameter("@idArea", request.idArea));
             command.Parameters.Add(new SqlParameter("@FechaInicio", request.FechaInicio));
             command.Parameters.Add(new SqlParameter("@FechaTermino", request.FechaTermino));
@@ -220,7 +220,7 @@ namespace WebApiPatrimonio.Controllers
             var sql = "EXEC PA_DEL_EVENTOSINVENTARIO @IdPantalla, @IdGeneral, @idEventoInventario";
             var result = await _context.Database.ExecuteSqlRawAsync(sql,
                 new SqlParameter("@IdPantalla", 1),
-                new SqlParameter("@IdGeneralLogueado ", 1), //loggedInUserId));
+                new SqlParameter("@IdGeneral", 1), //loggedInUserId));
                 new SqlParameter("@idEventoInventario", id)
             );
 
