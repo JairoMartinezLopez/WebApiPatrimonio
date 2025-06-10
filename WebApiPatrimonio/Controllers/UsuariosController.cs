@@ -280,7 +280,7 @@ namespace WebApiPatrimonio.Controllers
                 new SqlParameter("@idUsuario", request.Usuario),
                 new SqlParameter("@PasswordActual", request.PasswordActual),
                 new SqlParameter("@NuevaPassword", request.NuevaPassword),
-                new SqlParameter("@IdGeneral", 1), //loggedInUserId));
+                new SqlParameter("@IdGeneral", request.idGeneral), //loggedInUserId));
                 new SqlParameter("@IdPantalla", 1)
             };
 

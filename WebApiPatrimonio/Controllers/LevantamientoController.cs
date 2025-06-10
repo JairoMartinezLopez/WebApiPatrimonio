@@ -279,7 +279,7 @@ namespace WebApiPatrimonio.Controllers
             {
                 await _context.Database.OpenConnectionAsync();
                 using var reader = await command.ExecuteReaderAsync();
-                var resultados = new List<dynamic>(); // O crea una clase DTO para BienesAverificarDto
+                var resultados = new List<dynamic>(); 
                 while (await reader.ReadAsync())
                 {
                     resultados.Add(new

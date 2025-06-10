@@ -44,6 +44,46 @@ namespace WebApiPatrimonio.Controllers
             return programaLevatamiento;
         }
 
+        [HttpGet("EventosPorUsuario/{idGeneral}")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> ObtenerEventosPorUsuario(int idGeneral)
+        {
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_SEL_EVENTOSINVENTARIO_BYIDGENERAL";
+
+            command.Parameters.Add(new SqlParameter("@IdGeneral", idGeneral));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                using var reader = await command.ExecuteReaderAsync();
+                var resultados = new List<dynamic>();
+                while (await reader.ReadAsync())
+                {
+                    resultados.Add(new
+                    {
+                        idEventoInventario = reader["idEventoInventario"],
+                        Folio = reader["Folio"],
+                        Fecha_Inicio = reader["FechaInicio"],
+                        Fecha_Termino = reader["FechaTermino"],
+                        Nombre_Area = reader["NombreArea"],
+                        idGeneral = reader["idGeneral"],
+                        NombreEstadoEvento = reader["NombreEstadoEvento"],
+                        Activo = reader["Activo"]
+                    });
+                }
+                return Ok(resultados);
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
         [HttpGet("filtar")]
         public async Task<ActionResult<IEnumerable<EventosInventario>>> filtrarEventos(
             [FromQuery] DateTime? fechaInicio,
