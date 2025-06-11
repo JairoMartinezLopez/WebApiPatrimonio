@@ -154,7 +154,7 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-        // PUT: api/LevantamientosInventario/actualizar-masivo
+        // PUT: api/Levantamiento/actualizar-masivo
         [HttpPut("actualizar-masivo")]
         public async Task<ActionResult> ActualizarLevantamientosMasivos([FromBody] LevantamientoMasivoUpdate request)
         {
@@ -211,7 +211,7 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-        // POST: api/LevantamientosInventario/insertar-masivo
+        // POST: api/Levantamiento/insertar-masivo
         [HttpPost("insertar-masivo")]
         public async Task<ActionResult> InsertarLevantamientosMasivos([FromBody] LevantamientoMasivo request)
         {
@@ -265,7 +265,7 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-        // GET: api/LevantamientosInventario/bienEventos
+        // GET: api/Levantamientos/bienEventos
         [HttpGet("bienesPorArea/{idEventoInventario}")]
         public async Task<ActionResult<IEnumerable<dynamic>>> ObtenerBienesPorAreaEvento(int idEventoInventario)
         {
@@ -288,14 +288,17 @@ namespace WebApiPatrimonio.Controllers
                         NoInventario = reader["NoInventario"],
                         Serie = reader["Serie"],
                         Modelo = reader["Modelo"],
-                        Observaciones = reader["Observaciones"], // Observaciones del bien
+                        Color = reader["Color"],
+                        Marca = reader["Marca"],
+                        NoFactura = reader["NoFactura"],
+                        //Observaciones = reader["Observaciones"], // Observaciones del bien
                         Activo = reader["Activo"],
                         Disponibilidad = reader["Disponibilidad"],
                         //idLevantamientoInventario = reader["idLevantamientoInventario"],
                         ExisteElBien = reader["ExisteElBien"],
                         //FechaVerificacion = reader["FechaVerificacion"],
                         //FueActualizado = reader["FueActualizado"],
-                       // ObservacionesLevantamiento = reader["ObservacionesLevantamiento"], // Observaciones de la verificación
+                        ObservacionesLevantamiento = reader["ObservacionesLevantamiento"], // Observaciones de la verificación
                         YaVerificado = reader["YaVerificado"]
                     });
                 }
@@ -311,7 +314,7 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-        // GET: api/LevantamientosInventario/progreso/{idEventoInventario}
+        // GET: api/Levantamientos/progreso/{idEventoInventario}
         [HttpGet("progreso/{idEventoInventario}")]
         public async Task<ActionResult<IEnumerable<dynamic>>> ObtenerProgresoInventario(int idEventoInventario)
         {

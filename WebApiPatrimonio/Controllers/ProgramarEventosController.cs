@@ -179,13 +179,6 @@ namespace WebApiPatrimonio.Controllers
         [HttpPut("CambiarEstado")]
         public async Task<IActionResult> PutEstdoLevatamiento([FromBody] EventosInventario request)
         {
-            // Obtener el ID del usuario autenticado
-            /*var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int loggedInUserId))
-            {
-                return Unauthorized(new { error = "Usuario no autenticado o ID de usuario no válido." });
-            }*/
-
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandType = CommandType.StoredProcedure;
             command.CommandText = "PA_UPD_EVENTOSINVENTARIO_ESTADO";
