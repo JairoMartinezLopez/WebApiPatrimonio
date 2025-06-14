@@ -61,4 +61,22 @@ namespace WebApiPatrimonio.Models
         public int IdGeneral { get; set; }
         public List<LevantamientoUpdateItem> ListaLevantamientos { get; set; }
     }
+
+    public class LevantamientoMergeRequest
+    {
+        public int IdPantalla { get; set; }
+        public int IdGeneral { get; set; }
+        public int IdEventoInventario { get; set; } // Necesario para el MERGE
+        public List<LevantamientoParaMerge> ListaLevantamientos { get; set; }
+    }
+
+    public class LevantamientoParaMerge
+    {
+        public long IdBien { get; set; }
+        public long? IdLevantamientoInventario { get; set; } // Puede ser NULL para nuevas inserciones
+        public string? Observaciones { get; set; }
+        public int? ExisteElBien { get; set; } // int? para mapear a BIT en SQL
+        public DateTime? FechaVerificacion { get; set; }
+        public bool? FueActualizado { get; set; } // bool? para mapear a BIT en SQL
+    }
 }

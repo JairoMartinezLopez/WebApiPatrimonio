@@ -44,6 +44,59 @@ namespace WebApiPatrimonio.Controllers
             return levantamiento;
         }
 
+        [HttpGet("levantamientosPorEvento/{idEventoInventario}")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> GetLevantamientosByEvento(int idEventoInventario)
+        {
+            await using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_SEL_LEVANTAMIENTOSINVENTARIO_BY_EVENTO";
+
+            // Agrega el parámetro para el procedimiento almacenado
+            command.Parameters.Add(new SqlParameter("@idEventoInventario", idEventoInventario));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync(); // Abre la conexión de forma asíncrona
+                await using var reader = await command.ExecuteReaderAsync(); // Ejecuta el comando y obtiene un reader
+                var resultados = new List<dynamic>();
+
+                while (await reader.ReadAsync()) // Lee cada fila devuelta por el procedimiento almacenado
+                {
+                    resultados.Add(new
+                    {
+                        idLevantamientoInventario = reader["idLevantamientoInventario"],
+                        idBien = reader["idBien"],
+                        idEventoInventario = reader["idEventoInventario"],
+                        NoInventario = reader["NoInventario"],
+                        Serie = reader["Serie"],
+                        Modelo = reader["Modelo"],
+                        Color = reader["Color"], // Ahora leerá el nombre del color
+                        Marca = reader["Marca"], // Ahora leerá el nombre de la marca
+                        Observaciones = reader["Observaciones"],
+                        ExisteElBien = reader["ExisteElBien"],
+                        FechaVerificacion = reader["FechaVerificacion"],
+                        FueActualizado = reader["FueActualizado"]
+                    });
+                }
+
+                return Ok(resultados); // Retorna 200 OK con los datos
+            }
+            catch (SqlException ex)
+            {
+                // Para excepciones SQL, puedes manejar el RAISERROR específico o un error general
+                if (ex.Message.Contains("El ID de Evento de Inventario especificado no existe."))
+                {
+                    return NotFound(new { error = ex.Message }); // Retorna 404 si el ID no existe
+                }
+                return BadRequest(new { error = ex.Message }); // Retorna 400 Bad Request para otros errores SQL
+            }
+            finally
+            {
+                // Asegura que la conexión se cierre, incluso si ocurre un error
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
         [HttpGet("filtar")]
         public async Task<ActionResult<IEnumerable<EventosInventario>>> filtrarLevantamiento(
             [FromQuery] int? idbien,
@@ -494,6 +547,63 @@ namespace WebApiPatrimonio.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPost("procesar-levantamientos-masivos")] 
+        public async Task<ActionResult> ProcesarLevantamientosMasivos([FromBody] LevantamientoMergeRequest request)
+        {
+            if (request == null || !request.ListaLevantamientos.Any())
+            {
+                return BadRequest(new { error = "La solicitud debe contener al menos un levantamiento para procesar." });
+            }
+
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_UPSERT_LEVANTAMIENTOSINVENTARIO_MASIVO"; 
+
+            command.Parameters.Add(new SqlParameter("@IdPantalla", request.IdPantalla));
+            command.Parameters.Add(new SqlParameter("@IdGeneral", request.IdGeneral));
+            command.Parameters.Add(new SqlParameter("@idEventoInventario", request.IdEventoInventario));
+
+            DataTable dtLevantamientos = new DataTable();
+            dtLevantamientos.Columns.Add("idBien", typeof(long));
+            dtLevantamientos.Columns.Add("idLevantamientoInventario", typeof(long));
+            dtLevantamientos.Columns.Add("Observaciones", typeof(string));
+            dtLevantamientos.Columns.Add("ExisteElBien", typeof(int));
+            dtLevantamientos.Columns.Add("FechaVerificacion", typeof(DateTime));
+            dtLevantamientos.Columns.Add("FueActualizado", typeof(bool));
+
+            foreach (var item in request.ListaLevantamientos)
+            {
+                dtLevantamientos.Rows.Add(
+                    item.IdBien,
+                    (object?)item.IdLevantamientoInventario ?? DBNull.Value,
+                    (object)item.Observaciones ?? DBNull.Value,
+                    (object?)item.ExisteElBien ?? DBNull.Value,
+                    (object?)item.FechaVerificacion ?? DBNull.Value,
+                    (object?)item.FueActualizado ?? DBNull.Value
+                );
+            }
+
+            SqlParameter tvpParam = new SqlParameter("@ListaLevantamientos", dtLevantamientos);
+            tvpParam.SqlDbType = SqlDbType.Structured;
+            tvpParam.TypeName = "dbo.TipoLevantamientoInventarioMerge"; // El nombre del nuevo TVP
+            command.Parameters.Add(tvpParam);
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                await command.ExecuteNonQueryAsync();
+                return Ok(new { mensaje = "Levantamientos de inventario procesados masivamente correctamente." });
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
         }
 
         private bool LevantamientoExists(long id)

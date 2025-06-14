@@ -75,6 +75,53 @@ namespace WebApiPatrimonio.Controllers
             return bien;
         }
 
+        [HttpGet("datosPorId/{idBien}")]
+        public async Task<ActionResult<dynamic>> ObtenerDatosBienPorId(long idBien)
+        {
+            if (idBien <= 0)
+            {
+                return BadRequest(new { error = "El ID de Bien proporcionado no es válido." });
+            }
+
+            using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_OBTENER_DATOS_BIENES_PARA_QR"; 
+            command.Parameters.Add(new SqlParameter("@IdsBienes", idBien.ToString())); 
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                using var reader = await command.ExecuteReaderAsync();
+
+                if (await reader.ReadAsync())
+                {
+                    // Devuelve un solo objeto JSON con los datos del bien
+                    return Ok(new
+                    {
+                        idBien = reader["idBien"],
+                        NoInventario = reader["NoInventario"],
+                        Serie = reader["Serie"],
+                        Modelo = reader["Modelo"],
+                        Marca = reader["Marca"],
+                        Color = reader["Color"],
+                        NoFactura = reader["NumeroFactura"]
+                    });
+                }
+                else
+                {
+                    return NotFound(new { error = $"No se encontró ningún bien con el ID: {idBien}." });
+                }
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            finally
+            {
+                await _context.Database.CloseConnectionAsync();
+            }
+        }
+
         [HttpGet("filtrar")]
         public async Task<ActionResult<IEnumerable<Bien>>> FiltrarBienes(
             [FromQuery] int? idColor,
@@ -379,7 +426,7 @@ namespace WebApiPatrimonio.Controllers
             if (string.IsNullOrEmpty(idBienes))
                 return BadRequest("Se debe proporcionar al menos un ID de Bien.");
 
-            var listaBienes = new List<(string NumeroInventario, string Marca, string Modelo, string Serie, string Color)>();
+            var listaBienes = new List<(string idBien, string NumeroInventario, string Marca, string Modelo, string Serie, string Color, string NoFactura)>();
 
             try
             {
@@ -395,20 +442,22 @@ namespace WebApiPatrimonio.Controllers
                 while (await reader.ReadAsync())
                 {
                     listaBienes.Add((
-                        reader["NoInventario"].ToString(),
-                        reader["Marca"].ToString(),
-                        reader["Modelo"].ToString(),
-                        reader["Serie"].ToString(),
-                        reader["Color"].ToString()
+                        reader["idBien"]?.ToString() ?? "N/A",
+                        reader["NoInventario"]?.ToString() ?? "N/A",
+                        reader["Marca"]?.ToString() ?? "N/A",
+                        reader["Modelo"]?.ToString() ?? "N/A",
+                        reader["Serie"]?.ToString() ?? "N/A",
+                        reader["Color"]?.ToString() ?? "N/A",
+                        reader["NumeroFactura"]?.ToString() ?? "N/A"
                     ));
                 }
 
                 using var ms = new MemoryStream();
                 using var document = new PdfDocument();
 
-                var font = new XFont("Arial", 9, XFontStyle.Regular);
-                var bold = new XFont("Arial", 9, XFontStyle.Bold);
-                var titleFont = new XFont("Arial", 11, XFontStyle.Bold);
+                var font = new XFont("Arial", 8, XFontStyle.Regular);
+                var bold = new XFont("Arial", 8, XFontStyle.Bold);
+                var titleFont = new XFont("Arial", 10, XFontStyle.Bold);
 
                 double anchoPaginaA4 = PdfSharpCore.PageSizeConverter.ToSize(PdfSharpCore.PageSize.A4).Width;
 
@@ -423,7 +472,7 @@ namespace WebApiPatrimonio.Controllers
                 double margenY = 30;
 
                 double espaciadoHorizontal = (anchoPaginaA4 - (2 * margenX) - (columnas * etiquetaAncho)) / (columnas - 1);
-                double espaciadoVertical = 20;
+                double espaciadoVertical = 10;
 
                 int index = 0;
 
@@ -449,10 +498,10 @@ namespace WebApiPatrimonio.Controllers
                         gfx.DrawRectangle(XPens.Black, x, y, etiquetaAncho, etiquetaAlto);
 
                         // Encabezado
-                        gfx.DrawString("PODER JUDICIAL DEL ESTADO", titleFont, XBrushes.Black, new XRect(x + 10, y + 10, etiquetaAncho - 20, 20), XStringFormats.TopLeft);
+                        gfx.DrawString("PODER JUDICIAL DEL ESTADO", titleFont, XBrushes.Black, new XRect(x + 10, y + 10, etiquetaAncho - 20, 10), XStringFormats.TopLeft);
 
                         var bien = listaBienes[index];
-                        string contenidoQR = $"Inventario: {bien.NumeroInventario}\nMarca: {bien.Marca}\nModelo: {bien.Modelo}\nSerie: {bien.Serie}\nColor: {bien.Color}";
+                        string contenidoQR = $"idBien: {bien.idBien}\nInventario: {bien.NumeroInventario}\nMarca: {bien.Marca}\nModelo: {bien.Modelo}\nSerie: {bien.Serie}\nColor: {bien.Color}\nNumeroFactura: {bien.NoFactura}";
 
                         var qrGen = new QRCodeGenerator();
                         var qrData = qrGen.CreateQrCode(contenidoQR, QRCodeGenerator.ECCLevel.Q);
@@ -464,22 +513,22 @@ namespace WebApiPatrimonio.Controllers
 
                         // Texto con ajuste si el No. Inventario es muy largo
                         double textoX = x + 120;
-                        double textoY = y + 50;
+                        double textoY = y + 40;
 
                         void DrawText(string label, string value)
                         {
                             gfx.DrawString($"{label}", bold, XBrushes.Black, new XPoint(textoX, textoY));
-                            textoY += 12;
+                            textoY += 10;
 
                             const int maxLineLength = 30;
                             while (value.Length > maxLineLength)
                             {
                                 gfx.DrawString(value.Substring(0, maxLineLength), font, XBrushes.Black, new XPoint(textoX + 10, textoY));
                                 value = value.Substring(maxLineLength);
-                                textoY += 12;
+                                textoY += 10;
                             }
                             gfx.DrawString(value, font, XBrushes.Black, new XPoint(textoX + 10, textoY));
-                            textoY += 15;
+                            textoY += 12;
                         }
 
                         DrawText("Inventario:", bien.NumeroInventario);
@@ -487,6 +536,7 @@ namespace WebApiPatrimonio.Controllers
                         DrawText("Modelo:", bien.Modelo);
                         DrawText("Serie:", bien.Serie);
                         DrawText("Color:", bien.Color);
+                        DrawText("No. Factura:", bien.NoFactura);
 
                         index++;
                     }
