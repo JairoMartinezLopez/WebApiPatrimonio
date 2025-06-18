@@ -559,7 +559,8 @@ namespace WebApiPatrimonio.Controllers
 
             using var command = _context.Database.GetDbConnection().CreateCommand();
             command.CommandType = CommandType.StoredProcedure;
-            command.CommandText = "PA_UPSERT_LEVANTAMIENTOSINVENTARIO_MASIVO"; 
+            command.CommandText = "PA_UPSERT_LEVANTAMIENTOSINVENTARIO_MASIVO";
+            command.CommandTimeout = 120;
 
             command.Parameters.Add(new SqlParameter("@IdPantalla", request.IdPantalla));
             command.Parameters.Add(new SqlParameter("@IdGeneral", request.IdGeneral));

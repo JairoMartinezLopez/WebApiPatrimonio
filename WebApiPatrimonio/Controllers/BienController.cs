@@ -75,6 +75,83 @@ namespace WebApiPatrimonio.Controllers
             return bien;
         }
 
+        [HttpGet("datosPorNoInventario")] // New route for this specific search
+        public async Task<ActionResult<dynamic>> ObtenerBienPorNoInventario(string noInventario)
+        {
+            // Basic validation for the input
+            if (string.IsNullOrWhiteSpace(noInventario))
+            {
+                return BadRequest(new { error = "El número de inventario no puede estar vacío." });
+            }
+
+            await using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PA_SEL_BIENES_BYNOINVENTARIO"; // Your stored procedure name
+
+            // Add the parameter for the stored procedure
+            command.Parameters.Add(new SqlParameter("@NoInventario", noInventario));
+
+            try
+            {
+                await _context.Database.OpenConnectionAsync();
+                await using var reader = await command.ExecuteReaderAsync();
+
+                if (await reader.ReadAsync())
+                {
+                    // Return a single JSON object with the fetched data
+                    return Ok(new
+                    {
+                        idBien = reader["idBien"],
+                        NombreColor = reader["NombreColor"],
+                        FechaRegistro = reader["FechaRegistro"],
+                        FechaAlta = reader["FechaAlta"],
+                        Aviso = reader["Aviso"],
+                        Serie = reader["Serie"],
+                        Modelo = reader["Modelo"],
+                        NombreEstadoFisico = reader["NombreEstadoFisico"],
+                        NombreMarca = reader["NombreMarca"],
+                        Costo = reader["Costo"],
+                        Etiquetado = reader["Etiquetado"],
+                        FechaEtiquetado = reader["FechaEtiquetado"],
+                        Disponibilidad = reader["Disponibilidad"],
+                        FechaBaja = reader["FechaBaja"],
+                        NombreCausalBaja = reader["NombreCausalBaja"],
+                        NombreDisposicionFinal = reader["NombreDisposicionFinal"],
+                        NumeroFactura = reader["NumeroFactura"],
+                        NoInventario = reader["NoInventario"],
+                        NombreCatalogoBien = reader["NombreCatalogoBien"],
+                        Observaciones = reader["Observaciones"],
+                        AplicaUMAS = reader["AplicaUMAS"],
+                        Salida = reader["Salida"],
+                        Activo = reader["Activo"]
+                    });
+                }
+                else
+                {
+                    // Return 404 Not Found if no bien matches the inventory number
+                    return NotFound(new { error = $"No se encontró ningún bien con el número de inventario: {noInventario}." });
+                }
+            }
+            catch (SqlException ex)
+            {
+                // Handle SQL-specific errors
+                return StatusCode(500, new { error = "Ocurrió un error en la base de datos.", details = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // Handle any other unexpected errors
+                return StatusCode(500, new { error = "Ocurrió un error inesperado en el servidor.", details = ex.Message });
+            }
+            finally
+            {
+                // Ensure the database connection is closed
+                if (_context.Database.GetDbConnection().State == ConnectionState.Open)
+                {
+                    await _context.Database.CloseConnectionAsync();
+                }
+            }
+        }
+
         [HttpGet("datosPorId/{idBien}")]
         public async Task<ActionResult<dynamic>> ObtenerDatosBienPorId(long idBien)
         {
