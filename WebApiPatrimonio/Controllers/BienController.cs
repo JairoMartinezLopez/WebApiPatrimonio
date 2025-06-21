@@ -497,6 +497,7 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+        // GET: api/Bien/GenerarQRBienesPDF
         [HttpGet("GenerarQRBienesPDF")]
         public async Task<IActionResult> GenerarQRBienesPDF([FromQuery(Name = "idBienes")] string idBienes)
         {
