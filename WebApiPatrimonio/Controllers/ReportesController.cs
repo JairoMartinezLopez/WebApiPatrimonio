@@ -1106,6 +1106,641 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+        // GET: api/Reportes/ReporteTransferenciaConcentradoPDF
+        [HttpGet("ReporteTransferenciaConcentradoPDF")]
+        public async Task<IActionResult> GenerarReporteTransferenciaConcentradoPDF(
+            [FromQuery] int idGeneral,
+            [FromQuery] int idPantalla,
+            [FromQuery] int idFinanciamiento,
+            [FromQuery] int anio,
+            [FromQuery] int mes,
+            [FromQuery] int idUnidadResponsable, // Corresponds to @UnidadResponsable in SP
+            [FromQuery] bool aplicaUMAS) // Corresponds to @Umas in SP
+        {
+            try
+            {
+                // La estructura de datos se actualiza para reflejar las columnas del SP
+                var concentradoData = new List<(string TipoBien, string Bien, double CostoTotal)>();
+
+                using (var connection = _context.Database.GetDbConnection())
+                {
+                    await connection.OpenAsync();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "PA_SEL_ReporteTransferenciaConcentrado"; // Nombre del SP actualizado
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@IdGeneral", idGeneral));
+                        command.Parameters.Add(new SqlParameter("@IdPantalla", idPantalla));
+                        command.Parameters.Add(new SqlParameter("@idFinanciamiento", idFinanciamiento));
+                        command.Parameters.Add(new SqlParameter("@Anio", anio));
+                        command.Parameters.Add(new SqlParameter("@Mes", mes));
+                        command.Parameters.Add(new SqlParameter("@UnidadResponsable", idUnidadResponsable)); // Renombrado para coincidir con el SP
+                        command.Parameters.Add(new SqlParameter("@Umas", aplicaUMAS)); // Renombrado para coincidir con el SP
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                concentradoData.Add((
+                                    reader["TipoBien"]?.ToString(),
+                                    reader["Nombre"]?.ToString(), // 'Nombre' del SP mapea a 'Bien'
+                                    Convert.ToDouble(reader["Importe"]) // 'Importe' del SP mapea a 'CostoTotal'
+                                ));
+                            }
+                        }
+                    }
+                }
+
+                using var ms = new MemoryStream();
+                using var document = new PdfDocument();
+                document.Info.Title = "Reporte de Transferencias Concentrado"; // Título del documento actualizado
+
+
+                PdfPage page = document.AddPage();
+                page.Size = PdfSharpCore.PageSize.A4;
+
+                // Obtener las dimensiones de la página actual (ahora en landscape)
+                double pageWidth = page.Width;
+                double pageHeight = page.Height;
+
+                // Márgenes verticales fijos
+                double contentMarginTop = 150;
+                double contentMarginBottom = 70;
+
+                // Anchos de columna ajustados para las columnas existentes en el SP
+                double col1Width = 80;  // TipoBien
+                double col2Width = 350;  // Bien 
+                double col3Width = 85;  // CostoTotal
+                double totalTableWidth = col1Width + col2Width + col3Width;
+
+                // Calcular el margen izquierdo para centrar la tabla
+                double contentMarginLeft = (pageWidth - totalTableWidth) / 2;
+
+
+                XFont tableHeaderFont = new XFont("Arial", 9, XFontStyle.Bold);
+                XFont tableContentFont = new XFont("Arial", 8, XFontStyle.Regular);
+                XFont summaryFont = new XFont("Arial", 8, XFontStyle.Bold); // Para el total
+
+                double cellPadding = 5;
+                double rowHeight = 20;
+
+                double currentY = contentMarginTop;
+                int pageNumber = 1;
+
+                XGraphics gfx = XGraphics.FromPdfPage(page);
+
+                // Cambia el título del reporte en el encabezado
+                DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS CONCENTRADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                DrawFooter(gfx, page);
+
+                // Encabezados de la tabla
+                gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
+                gfx.DrawString("TIPO BIEN", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width, rowHeight), XStringFormats.TopCenter);
+                gfx.DrawString("DESCRIPCIÓN BIEN", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + cellPadding, currentY + cellPadding, col2Width, rowHeight), XStringFormats.TopCenter);
+                gfx.DrawString("IMPORTE", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopCenter);
+
+                gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width, currentY, contentMarginLeft + col1Width, currentY + rowHeight);
+                gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
+
+                currentY += rowHeight;
+                double totalCostoGeneral = 0; // Renombrado para claridad
+
+                foreach (var item in concentradoData)
+                {
+                    // Nota: page.Height ya reflejará la altura de la página en orientación Landscape.
+                    if (currentY + rowHeight > pageHeight - contentMarginBottom) // Usar pageHeight
+                    {
+                        pageNumber++;
+                        page = document.AddPage();
+                        page.Orientation = PdfSharpCore.PageOrientation.Landscape; // Asegurarse de que las nuevas páginas también sean landscape
+                        page.Size = PdfSharpCore.PageSize.A3;
+                        gfx = XGraphics.FromPdfPage(page);
+
+                        DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS CONCENTRADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                        DrawFooter(gfx, page);
+
+                        currentY = contentMarginTop;
+                        gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
+                        gfx.DrawString("TIPO BIEN", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width, rowHeight), XStringFormats.TopCenter);
+                        gfx.DrawString("DESCRIPCIÓN BIEN", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + cellPadding, currentY + cellPadding, col2Width, rowHeight), XStringFormats.TopLeft);
+                        gfx.DrawString("IMPORTE", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopLeft);
+
+                        gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width, currentY, contentMarginLeft + col1Width, currentY + rowHeight);
+                        gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
+
+                        currentY += rowHeight;
+                    }
+
+                    gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
+                    gfx.DrawString(item.TipoBien, tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width, rowHeight), XStringFormats.TopLeft);
+                    gfx.DrawString(item.Bien, tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + cellPadding, currentY + cellPadding, col2Width, rowHeight), XStringFormats.TopLeft);
+                    gfx.DrawString($"{item.CostoTotal:C2}", tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopCenter);
+
+                    gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width, currentY, contentMarginLeft + col1Width, currentY + rowHeight);
+                    gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
+
+                    totalCostoGeneral += item.CostoTotal;
+                    currentY += rowHeight;
+                }
+
+                if (concentradoData.Any())
+                {
+                    if (currentY + rowHeight > pageHeight - contentMarginBottom) // Usar pageHeight
+                    {
+                        pageNumber++;
+                        page = document.AddPage();
+                        page.Orientation = PdfSharpCore.PageOrientation.Landscape; // Asegurarse de que las nuevas páginas también sean landscape
+                        page.Size = PdfSharpCore.PageSize.A3;
+                        gfx = XGraphics.FromPdfPage(page);
+                        DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS CONCENTRADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                        DrawFooter(gfx, page);
+                        currentY = contentMarginTop;
+                    }
+
+                    gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
+                    // El "TOTAL GENERAL" abarca las primeras 2 columnas (TipoBien y Descripción Bien)
+                    gfx.DrawString("TOTAL GENERAL", summaryFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width + col2Width, rowHeight), XStringFormats.TopRight);
+                    gfx.DrawString($"{totalCostoGeneral:C2}", summaryFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopCenter);
+                    gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
+                }
+
+                document.Save(ms);
+                ms.Position = 0;
+                return File(ms.ToArray(), "application/pdf", $"ReporteTransferenciaConcentrado_{DateTime.Now:yyyyMMddHHmmss}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al generar reporte de transferencias concentrado: {ex.Message}");
+            }
+        }
+
+        // GET: api/Reportes/ReporteTransferenciaDesarrolladoPDF
+        [HttpGet("ReporteTransferenciaDesarrolladoPDF")]
+        public async Task<IActionResult> GenerarReporteTransferenciaDesarrolladoPDF(
+            [FromQuery] int idGeneral,
+            [FromQuery] int idPantalla,
+            [FromQuery] int idFinanciamiento,
+            [FromQuery] int anio,
+            [FromQuery] int mes,
+            [FromQuery] int unidadResponsable,
+            [FromQuery] bool umas)
+        {
+            try
+            {
+                // Se actualiza la tupla para reflejar los datos devueltos por el SP PA_SEL_ReporteTransferenciaDesarrollado
+                var desglosadoData = new List<(string ClaveTipoBien, string NombreTipoBien, string ClaveBien, string BienDesc, string Unidad, string NoInventario, string Aviso, string Marca, string Serie, string Modelo, double Costo, DateTime FechaAlta, string Observaciones, string FolioFiscal, string NumeroFactura, string Adscripcion)>();
+
+                using (var connection = _context.Database.GetDbConnection())
+                {
+                    await connection.OpenAsync();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "PA_SEL_ReporteTransferenciaDesarrollado"; // Nombre del SP actualizado
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@IdGeneral", idGeneral));
+                        command.Parameters.Add(new SqlParameter("@IdPantalla", idPantalla));
+                        command.Parameters.Add(new SqlParameter("@idFinanciamiento", idFinanciamiento));
+                        command.Parameters.Add(new SqlParameter("@Anio", anio));
+                        command.Parameters.Add(new SqlParameter("@Mes", mes));
+                        command.Parameters.Add(new SqlParameter("@UnidadResponsable", unidadResponsable));
+                        command.Parameters.Add(new SqlParameter("@Umas", umas));
+                        // El SP PA_SEL_ReporteTransferenciaDesarrollado no tiene el parámetro @idArea, por lo que lo eliminamos
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                desglosadoData.Add((
+                                    reader["Clave"]?.ToString(), // Clave de TipoBien
+                                    reader["NombreTipoBien"]?.ToString(), // Nombre de TipoBien
+                                    reader["ClaveBien"]?.ToString(),
+                                    reader["BienDesc"]?.ToString(),
+                                    reader["Unidad"]?.ToString(),
+                                    reader["NoInventario"]?.ToString(),
+                                    reader["Aviso"]?.ToString(),
+                                    reader["Marca"]?.ToString(),
+                                    reader["Serie"]?.ToString(),
+                                    reader["Modelo"]?.ToString(),
+                                    Convert.ToDouble(reader["Costo"]),
+                                    Convert.ToDateTime(reader["FechaAlta"]),
+                                    reader["Observaciones"]?.ToString(),
+                                    reader["FolioFiscal"]?.ToString(),
+                                    reader["NumeroFactura"]?.ToString(),
+                                    reader["Adscripcion"]?.ToString() // Nuevo campo
+                                ));
+                            }
+                        }
+                    }
+                }
+
+                // Agrupar los datos para la clasificación
+                var groupedData = desglosadoData
+                    .GroupBy(item => new { item.ClaveTipoBien, item.NombreTipoBien })
+                    .Select(g1 => new
+                    {
+                        TipoBienKey = g1.Key,
+                        TipoBienItems = g1.GroupBy(item => new { item.ClaveBien, item.BienDesc })
+                                             .Select(g2 => new
+                                             {
+                                                 BienKey = g2.Key,
+                                                 BienItems = g2.OrderBy(item => item.NoInventario).ToList(),
+                                                 TotalArticulosBien = g2.Count(),
+                                                 CostoTotalBien = g2.Sum(item => item.Costo)
+                                             }).ToList(),
+                        SubtotalTipoBien = g1.Sum(item => item.Costo)
+                    }).ToList();
+
+                using var ms = new MemoryStream();
+                using var document = new PdfDocument();
+                document.Info.Title = "Reporte de Transferencias Detallado"; // Actualizado el título del documento
+
+                // Definir el tamaño de página y la orientación a Landscape (Legal horizontal)
+                PdfPage page = document.AddPage();
+                page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                page.Size = PdfSharpCore.PageSize.Legal; // PageSize.Legal para un ancho mayor
+
+                XGraphics gfx = XGraphics.FromPdfPage(page);
+
+                // Recalcular el contentWidth real después de establecer el tamaño y orientación de la página
+                double contentMarginTop = 150;
+                double contentMarginBottom = 70;
+                // Estos serán ajustados para centrar la tabla
+                double contentMarginLeft = 0;
+                double contentMarginRight = 0;
+
+                XFont tableHeaderFont = new XFont("Arial", 8, XFontStyle.Bold);
+                XFont tableContentFont = new XFont("Arial", 7, XFontStyle.Regular);
+                XFont groupHeaderFont = new XFont("Arial", 9, XFontStyle.Bold);
+                XFont summaryFont = new XFont("Arial", 8, XFontStyle.Regular);
+                double rowHeight = 18;
+                double cellPadding = 3;
+
+                XPen dottedBottomBorderPen = new XPen(XColor.FromArgb(150, 0, 0, 0), 0.5);
+                dottedBottomBorderPen.DashStyle = XDashStyle.Dot;
+
+                // Definir las columnas y sus anchos para el reporte de transferencias detallado
+                var columnHeaders = new (string Name, double WidthFactor)[]
+                {
+                ("UNIDAD", 0.04),
+                ("NO. INVENT", 0.09),
+                ("AVISO", 0.12),
+                ("FACTURA", 0.05), // Asumo que se quiere NumeroFactura aquí
+                ("FOLIO FIS.", 0.09),
+                ("MARCA", 0.04),
+                ("SERIE", 0.09),
+                ("MODELO", 0.09),
+                ("COSTO", 0.05),
+                ("FECHA ALTA", 0.08), // FechaAlta del SP
+                ("OBSERVACIONES", 0.15),
+                ("ADSCRIPCIÓN", 0.10) // Nuevo campo del SP
+                };
+
+                // Sumar los factores para obtener el total para las columnas mostradas
+                double totalFactor = columnHeaders.Sum(ch => ch.WidthFactor);
+                // Definir el ancho total máximo disponible para la tabla, dejando espacio para márgenes razonables.
+                double availableContentWidth = page.Width - 80;
+
+                // Calcular los anchos de columna absolutos, normalizando para el ancho disponible
+                double[] colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+
+                // Calcular el ancho total de la tabla (real)
+                double actualTableWidth = colWidths.Sum();
+
+                // Recalcular contentMarginLeft para centrar la tabla
+                contentMarginLeft = (page.Width - actualTableWidth) / 2;
+                contentMarginRight = contentMarginLeft; // Para ser simétrico
+
+                int pageNumber = 1;
+                double currentY = contentMarginTop;
+                double currentX;
+
+                double totalGeneralPesos = 0;
+
+                Action DrawTableHeaders = () =>
+                {
+                    currentX = contentMarginLeft;
+                    // Primero el encabezado de "DESCRIPCIÓN BIEN" que abarca varias columnas
+                    double descripcionBienHeaderWidth = colWidths[0] + colWidths[1]; // Cubrir UNIDAD y NO. INVENT
+                    gfx.DrawRectangle(XPens.Black, currentX, currentY, descripcionBienHeaderWidth, rowHeight);
+                    gfx.DrawString("DESCRIPCIÓN BIEN", tableHeaderFont, XBrushes.Black,
+                        new XRect(currentX + cellPadding, currentY + cellPadding, descripcionBienHeaderWidth - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.Center);
+                    currentX += descripcionBienHeaderWidth; // Mover X para las siguientes columnas
+
+                    // Dibujar el resto de los encabezados de la fila superior
+                    for (int i = 2; i < columnHeaders.Length; i++) // Empieza desde "AVISO" (índice 2)
+                    {
+                        gfx.DrawRectangle(XPens.Black, currentX, currentY, colWidths[i], rowHeight);
+                        gfx.DrawString(columnHeaders[i].Name, tableHeaderFont, XBrushes.Black,
+                            new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[i] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.Center);
+                        currentX += colWidths[i];
+                    }
+                    currentY += rowHeight;
+                };
+
+                // Se actualiza el título del encabezado del reporte
+                DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS DETALLADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                DrawFooter(gfx, page);
+                DrawTableHeaders(); // Dibuja los encabezados de la tabla por primera vez
+
+                foreach (var tipoBienGroup in groupedData)
+                {
+                    // Check for page break before drawing TipoBien header
+                    if (currentY + rowHeight * 2 > page.Height - contentMarginBottom)
+                    {
+                        pageNumber++;
+                        page = document.AddPage();
+                        page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                        page.Size = PdfSharpCore.PageSize.Legal;
+                        gfx = XGraphics.FromPdfPage(page);
+
+                        // Recalculate margins and widths for the new page
+                        availableContentWidth = page.Width - 80;
+                        colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+                        actualTableWidth = colWidths.Sum();
+                        contentMarginLeft = (page.Width - actualTableWidth) / 2;
+
+                        DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS DETALLADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                        DrawFooter(gfx, page);
+                        currentY = contentMarginTop;
+                        DrawTableHeaders();
+                    }
+
+                    // Dibuja el encabezado del tipo de bien (CAT_TIPOSBIENES)
+                    string tipoBienHeader = $"TIPO DE BIEN: {tipoBienGroup.TipoBienKey.ClaveTipoBien} {tipoBienGroup.TipoBienKey.NombreTipoBien}";
+                    gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
+                        new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
+                    currentY += rowHeight;
+
+                    foreach (var bienGroup in tipoBienGroup.TipoBienItems)
+                    {
+                        // Check for page break before drawing Bien header
+                        if (currentY + rowHeight * 3 > page.Height - contentMarginBottom)
+                        {
+                            pageNumber++;
+                            page = document.AddPage();
+                            page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                            page.Size = PdfSharpCore.PageSize.Legal;
+                            gfx = XGraphics.FromPdfPage(page);
+
+                            // Recalculate margins and widths for the new page
+                            availableContentWidth = page.Width - 80;
+                            colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+                            actualTableWidth = colWidths.Sum();
+                            contentMarginLeft = (page.Width - actualTableWidth) / 2;
+
+                            DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS DETALLADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                            DrawFooter(gfx, page);
+                            currentY = contentMarginTop;
+                            DrawTableHeaders();
+                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
+                                new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
+                            currentY += rowHeight;
+                        }
+
+                        // Dibuja el encabezado del bien (CAT_BIENES)
+                        string bienHeader = $"BIEN: {bienGroup.BienKey.ClaveBien} {bienGroup.BienKey.BienDesc}";
+                        gfx.DrawString(bienHeader, summaryFont, XBrushes.Black,
+                            new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeight), XStringFormats.TopLeft);
+                        currentY += rowHeight;
+
+                        // Dibujar la línea horizontal debajo de la descripción del bien.
+                        gfx.DrawLine(XPens.Black, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
+
+
+                        foreach (var item in bienGroup.BienItems)
+                        {
+                            if (currentY + rowHeight > page.Height - contentMarginBottom)
+                            {
+                                pageNumber++;
+                                page = document.AddPage();
+                                page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                                page.Size = PdfSharpCore.PageSize.Legal;
+                                gfx = XGraphics.FromPdfPage(page);
+
+                                // Recalculate margins and widths for the new page
+                                availableContentWidth = page.Width - 80;
+                                colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+                                actualTableWidth = colWidths.Sum();
+                                contentMarginLeft = (page.Width - actualTableWidth) / 2;
+
+                                DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS DETALLADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                                DrawFooter(gfx, page);
+                                currentY = contentMarginTop;
+                                DrawTableHeaders();
+                                gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
+                                    new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
+                                currentY += rowHeight;
+                                gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
+                                    new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeight), XStringFormats.TopLeft);
+                                currentY += rowHeight;
+                                gfx.DrawLine(XPens.Black, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
+                            }
+
+                            // Dibuja una línea punteada debajo de cada fila de datos, excepto la última.
+                            if (item != bienGroup.BienItems.Last())
+                            {
+                                gfx.DrawLine(dottedBottomBorderPen, contentMarginLeft, currentY + rowHeight, contentMarginLeft + actualTableWidth, currentY + rowHeight);
+                            }
+
+                            currentX = contentMarginLeft;
+                            int colIndex = 0; // Índice para recorrer colWidths
+
+                            gfx.DrawString(item.Unidad, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.NoInventario, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.Aviso, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.NumeroFactura, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.FolioFiscal, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.Marca, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.Serie, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.Modelo, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString($"{item.Costo:C2}", tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopRight);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.FechaAlta.ToString("dd/MM/yyyy"), tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.Observaciones, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            gfx.DrawString(item.Adscripcion, tableContentFont, XBrushes.Black,
+                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                            currentX += colWidths[colIndex];
+                            colIndex++;
+
+                            currentY += rowHeight;
+                        }
+
+                        // Dibuja el "Total de artículos del bien" y "Costo Total del Bien"
+                        if (currentY + rowHeight * 2 > page.Height - contentMarginBottom) // Considerar espacio para ambos totales
+                        {
+                            pageNumber++;
+                            page = document.AddPage();
+                            page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                            page.Size = PdfSharpCore.PageSize.Legal;
+                            gfx = XGraphics.FromPdfPage(page);
+
+                            // Recalculate margins and widths for the new page
+                            availableContentWidth = page.Width - 80;
+                            colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+                            actualTableWidth = colWidths.Sum();
+                            contentMarginLeft = (page.Width - actualTableWidth) / 2;
+
+                            DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS DETALLADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                            DrawFooter(gfx, page);
+                            currentY = contentMarginTop;
+                            DrawTableHeaders();
+                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
+                                new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
+                            currentY += rowHeight;
+                            gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
+                                new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeight), XStringFormats.TopLeft);
+                            currentY += rowHeight;
+                            gfx.DrawLine(XPens.Black, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
+                        }
+
+                        string totalArticulosBien = $"TOTAL DE ARTÍCULOS DEL BIEN: {bienGroup.TotalArticulosBien}";
+                        string costoTotalBien = $"COSTO TOTAL DEL BIEN: {bienGroup.CostoTotalBien:C2}";
+
+                        gfx.DrawString(totalArticulosBien, summaryFont, XBrushes.Black,
+                            new XRect(contentMarginLeft + 20, currentY + cellPadding, actualTableWidth - 20, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                        currentY += rowHeight;
+
+                        // Check for page break for the Costo Total del Bien if needed
+                        if (currentY + rowHeight > page.Height - contentMarginBottom)
+                        {
+                            pageNumber++;
+                            page = document.AddPage();
+                            page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                            page.Size = PdfSharpCore.PageSize.Legal;
+                            gfx = XGraphics.FromPdfPage(page);
+
+                            // Recalculate margins and widths for the new page
+                            availableContentWidth = page.Width - 80;
+                            colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+                            actualTableWidth = colWidths.Sum();
+                            contentMarginLeft = (page.Width - actualTableWidth) / 2;
+
+                            DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS DETALLADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                            DrawFooter(gfx, page);
+                            currentY = contentMarginTop;
+                            DrawTableHeaders();
+                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
+                                new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
+                            currentY += rowHeight;
+                            gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
+                                new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeight), XStringFormats.TopLeft);
+                            currentY += rowHeight;
+                            gfx.DrawLine(XPens.Black, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
+                        }
+
+                        gfx.DrawString(costoTotalBien, summaryFont, XBrushes.Black,
+                            new XRect(contentMarginLeft + 20, currentY + cellPadding, actualTableWidth - 20, rowHeight - cellPadding * 2), XStringFormats.TopRight);
+                        currentY += rowHeight + 5;
+                    }
+
+                    // Dibuja el "Subtotal por tipo de bien"
+                    if (currentY + rowHeight > page.Height - contentMarginBottom)
+                    {
+                        pageNumber++;
+                        page = document.AddPage();
+                        page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                        page.Size = PdfSharpCore.PageSize.Legal;
+                        gfx = XGraphics.FromPdfPage(page);
+
+                        // Recalculate margins and widths for the new page
+                        availableContentWidth = page.Width - 80;
+                        colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+                        actualTableWidth = colWidths.Sum();
+                        contentMarginLeft = (page.Width - actualTableWidth) / 2;
+
+                        DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS DETALLADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                        DrawFooter(gfx, page);
+                        currentY = contentMarginTop;
+                        DrawTableHeaders();
+                    }
+
+                    string subtotalTipoBienText = $"SUBTOTAL POR TIPO DE BIEN: {tipoBienGroup.SubtotalTipoBien:C2}";
+                    gfx.DrawString(subtotalTipoBienText, groupHeaderFont, XBrushes.Black,
+                        new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+                    currentY += rowHeight + 10;
+
+                    totalGeneralPesos += tipoBienGroup.SubtotalTipoBien;
+                }
+
+                // Dibuja el "Total general en pesos"
+                if (currentY + rowHeight > page.Height - contentMarginBottom)
+                {
+                    pageNumber++;
+                    page = document.AddPage();
+                    page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                    page.Size = PdfSharpCore.PageSize.Legal;
+                    gfx = XGraphics.FromPdfPage(page);
+
+                    // Recalculate margins and widths for the new page
+                    availableContentWidth = page.Width - 80;
+                    colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+                    actualTableWidth = colWidths.Sum();
+                    contentMarginLeft = (page.Width - actualTableWidth) / 2;
+
+                    DrawHeader(gfx, page, "REPORTE DE TRANSFERENCIAS DETALLADO", "TRANSFERENCIAS", anio, mes, idFinanciamiento, pageNumber, 1);
+                    DrawFooter(gfx, page);
+                    currentY = contentMarginTop;
+                    DrawTableHeaders();
+                }
+                string totalGeneralText = $"TOTAL GENERAL EN PESOS: {totalGeneralPesos:C2}";
+                gfx.DrawString(totalGeneralText, groupHeaderFont, XBrushes.Black,
+                    new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
+
+                document.Save(ms);
+                ms.Position = 0;
+                return File(ms.ToArray(), "application/pdf", $"ReporteTransferenciaDesarrollado_{DateTime.Now:yyyyMMddHHmmss}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al generar reporte de transferencias detallado: {ex.Message}");
+            }
+        }
+
         private void DrawHeader(XGraphics gfx, PdfPage page, string reportTitle, string tipoReporte, int anio, int mes, int idFinanciamiento, int currentPage, int totalPages)
         {
             string logoPathLeft = Path.Combine(_webHostEnvironment.WebRootPath, "images", "consejo_judicatura.png"); // Asegúrate de que el nombre del archivo sea correcto
