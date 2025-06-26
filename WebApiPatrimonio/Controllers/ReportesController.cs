@@ -1233,7 +1233,7 @@ namespace WebApiPatrimonio.Controllers
                     }
 
                     gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
-                    gfx.DrawString(item.TipoBien, tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width, rowHeight), XStringFormats.TopLeft);
+                    gfx.DrawString(item.TipoBien, tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width, rowHeight), XStringFormats.TopCenter);
                     gfx.DrawString(item.Bien, tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + cellPadding, currentY + cellPadding, col2Width, rowHeight), XStringFormats.TopLeft);
                     gfx.DrawString($"{item.CostoTotal:C2}", tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopCenter);
 
@@ -1260,7 +1260,7 @@ namespace WebApiPatrimonio.Controllers
 
                     gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
                     // El "TOTAL GENERAL" abarca las primeras 2 columnas (TipoBien y Descripción Bien)
-                    gfx.DrawString("TOTAL GENERAL", summaryFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width + col2Width, rowHeight), XStringFormats.TopRight);
+                    gfx.DrawString("TOTAL GENERAL", summaryFont, XBrushes.Black, new XRect(contentMarginLeft - cellPadding, currentY + cellPadding, col1Width + col2Width, rowHeight), XStringFormats.TopRight);
                     gfx.DrawString($"{totalCostoGeneral:C2}", summaryFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopCenter);
                     gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
                 }
@@ -1376,6 +1376,7 @@ namespace WebApiPatrimonio.Controllers
                 XFont summaryFont = new XFont("Arial", 8, XFontStyle.Regular);
                 double rowHeight = 18;
                 double cellPadding = 3;
+                double lineHeight = 10;
 
                 XPen dottedBottomBorderPen = new XPen(XColor.FromArgb(150, 0, 0, 0), 0.5);
                 dottedBottomBorderPen.DashStyle = XDashStyle.Dot;
@@ -1384,8 +1385,8 @@ namespace WebApiPatrimonio.Controllers
                 var columnHeaders = new (string Name, double WidthFactor)[]
                 {
                 ("UNIDAD", 0.04),
-                ("NO. INVENT", 0.09),
-                ("AVISO", 0.12),
+                ("NO. INVENT", 0.10),
+                ("AVISO", 0.11),
                 ("FACTURA", 0.05), // Asumo que se quiere NumeroFactura aquí
                 ("FOLIO FIS.", 0.09),
                 ("MARCA", 0.04),
@@ -1421,21 +1422,25 @@ namespace WebApiPatrimonio.Controllers
                 Action DrawTableHeaders = () =>
                 {
                     currentX = contentMarginLeft;
-                    // Primero el encabezado de "DESCRIPCIÓN BIEN" que abarca varias columnas
-                    double descripcionBienHeaderWidth = colWidths[0] + colWidths[1]; // Cubrir UNIDAD y NO. INVENT
-                    gfx.DrawRectangle(XPens.Black, currentX, currentY, descripcionBienHeaderWidth, rowHeight);
-                    gfx.DrawString("DESCRIPCIÓN BIEN", tableHeaderFont, XBrushes.Black,
-                        new XRect(currentX + cellPadding, currentY + cellPadding, descripcionBienHeaderWidth - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.Center);
-                    currentX += descripcionBienHeaderWidth; // Mover X para las siguientes columnas
 
-                    // Dibujar el resto de los encabezados de la fila superior
-                    for (int i = 2; i < columnHeaders.Length; i++) // Empieza desde "AVISO" (índice 2)
+                    // 1. Fila de encabezado agrupado: "DESCRIPCIÓN BIEN"
+                    double descripcionBienWidth = colWidths[0] + colWidths[1]; // Agrupa NO. INVENT + COLOR
+                    gfx.DrawRectangle(XPens.Black, currentX, currentY, descripcionBienWidth, rowHeight);
+                    gfx.DrawString("DESCRIPCIÓN BIEN", tableHeaderFont, XBrushes.Black,
+                        new XRect(currentX, currentY, descripcionBienWidth, rowHeight), XStringFormats.Center);
+
+                    currentY += rowHeight;
+
+                    // 2. Segunda fila: encabezados normales
+                    currentX = contentMarginLeft;
+                    for (int i = 0; i < columnHeaders.Length; i++)
                     {
                         gfx.DrawRectangle(XPens.Black, currentX, currentY, colWidths[i], rowHeight);
                         gfx.DrawString(columnHeaders[i].Name, tableHeaderFont, XBrushes.Black,
                             new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[i] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.Center);
                         currentX += colWidths[i];
                     }
+
                     currentY += rowHeight;
                 };
 
@@ -1468,7 +1473,7 @@ namespace WebApiPatrimonio.Controllers
                     }
 
                     // Dibuja el encabezado del tipo de bien (CAT_TIPOSBIENES)
-                    string tipoBienHeader = $"TIPO DE BIEN: {tipoBienGroup.TipoBienKey.ClaveTipoBien} {tipoBienGroup.TipoBienKey.NombreTipoBien}";
+                    string tipoBienHeader = $"{tipoBienGroup.TipoBienKey.ClaveTipoBien} {tipoBienGroup.TipoBienKey.NombreTipoBien}";
                     gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
                         new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
                     currentY += rowHeight;
@@ -1500,7 +1505,7 @@ namespace WebApiPatrimonio.Controllers
                         }
 
                         // Dibuja el encabezado del bien (CAT_BIENES)
-                        string bienHeader = $"BIEN: {bienGroup.BienKey.ClaveBien} {bienGroup.BienKey.BienDesc}";
+                        string bienHeader = $"{bienGroup.BienKey.ClaveBien} {bienGroup.BienKey.BienDesc}";
                         gfx.DrawString(bienHeader, summaryFont, XBrushes.Black,
                             new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeight), XStringFormats.TopLeft);
                         currentY += rowHeight;
@@ -1511,15 +1516,49 @@ namespace WebApiPatrimonio.Controllers
 
                         foreach (var item in bienGroup.BienItems)
                         {
-                            if (currentY + rowHeight > page.Height - contentMarginBottom)
+                            // Calcular altura de fila en función del contenido
+                            string[] textos = {
+                                item.Unidad,
+                                item.NoInventario,
+                                item.Aviso,
+                                item.NumeroFactura,
+                                item.FolioFiscal,
+                                item.Marca,
+                                item.Serie,
+                                item.Modelo,
+                                $"{item.Costo:C2}",
+                                item.FechaAlta.ToString("dd/MM/yyyy"),
+                                item.Observaciones,
+                                item.Adscripcion
+                            };
+
+                            double maxLineCount = 1;
+
+                            List<List<string>> wrappedTexts = new List<List<string>>();
+
+                            for (int i = 0; i < textos.Length; i++)
+                            {
+                                string text = textos[i] ?? string.Empty;
+                                double cellWidth = colWidths[i] - cellPadding * 2;
+                                // Calcular el número de caracteres por línea basándose en el ancho real de la fuente
+                                int aproxCharPerLine = (int)(cellWidth / tableContentFont.Size * (1.0 / 0.6)); // Ajuste para un ancho más preciso
+                                if (aproxCharPerLine <= 0) aproxCharPerLine = 1;
+
+                                var lines = wrapText(text, aproxCharPerLine);
+                                wrappedTexts.Add(lines);
+                                maxLineCount = Math.Max(maxLineCount, lines.Count);
+                            }
+
+                            double adjustedRowHeight = maxLineCount * 10;
+
+                            // Saltar página si no hay espacio suficiente
+                            if (currentY + adjustedRowHeight > page.Height - contentMarginBottom)
                             {
                                 pageNumber++;
                                 page = document.AddPage();
                                 page.Orientation = PdfSharpCore.PageOrientation.Landscape;
                                 page.Size = PdfSharpCore.PageSize.Legal;
                                 gfx = XGraphics.FromPdfPage(page);
-
-                                // Recalculate margins and widths for the new page
                                 availableContentWidth = page.Width - 80;
                                 colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
                                 actualTableWidth = colWidths.Sum();
@@ -1538,76 +1577,24 @@ namespace WebApiPatrimonio.Controllers
                                 gfx.DrawLine(XPens.Black, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
                             }
 
-                            // Dibuja una línea punteada debajo de cada fila de datos, excepto la última.
-                            if (item != bienGroup.BienItems.Last())
+                            currentX = contentMarginLeft;
+                            for (int colIndex = 0; colIndex < wrappedTexts.Count; colIndex++)
                             {
-                                gfx.DrawLine(dottedBottomBorderPen, contentMarginLeft, currentY + rowHeight, contentMarginLeft + actualTableWidth, currentY + rowHeight);
+                                var lines = wrappedTexts[colIndex];
+                                double cellWidth = colWidths[colIndex];
+                                double textHeight = lines.Count * lineHeight;
+                                double yOffset = currentY + (adjustedRowHeight - textHeight) / 2; // Calculate Y-offset for vertical centering
+
+                                for (int i = 0; i < lines.Count; i++)
+                                {
+                                    gfx.DrawString(lines[i], tableContentFont, XBrushes.Black,
+                                        new XRect(currentX + cellPadding, (yOffset + i * lineHeight)+4, cellWidth - cellPadding * 2, lineHeight),
+                                        XStringFormats.TopLeft);
+                                }
+                                currentX += cellWidth;
                             }
 
-                            currentX = contentMarginLeft;
-                            int colIndex = 0; // Índice para recorrer colWidths
-
-                            gfx.DrawString(item.Unidad, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.NoInventario, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.Aviso, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.NumeroFactura, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.FolioFiscal, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.Marca, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.Serie, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.Modelo, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString($"{item.Costo:C2}", tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopRight);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.FechaAlta.ToString("dd/MM/yyyy"), tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.Observaciones, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            gfx.DrawString(item.Adscripcion, tableContentFont, XBrushes.Black,
-                                new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[colIndex] - cellPadding * 2, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
-                            currentX += colWidths[colIndex];
-                            colIndex++;
-
-                            currentY += rowHeight;
+                            currentY += adjustedRowHeight;
                         }
 
                         // Dibuja el "Total de artículos del bien" y "Costo Total del Bien"
@@ -1674,7 +1661,7 @@ namespace WebApiPatrimonio.Controllers
                         }
 
                         gfx.DrawString(costoTotalBien, summaryFont, XBrushes.Black,
-                            new XRect(contentMarginLeft + 20, currentY + cellPadding, actualTableWidth - 20, rowHeight - cellPadding * 2), XStringFormats.TopRight);
+                            new XRect(contentMarginLeft + 20, currentY + cellPadding, actualTableWidth - 20, rowHeight - cellPadding * 2), XStringFormats.TopLeft);
                         currentY += rowHeight + 5;
                     }
 
@@ -1739,6 +1726,38 @@ namespace WebApiPatrimonio.Controllers
             {
                 return StatusCode(500, $"Error al generar reporte de transferencias detallado: {ex.Message}");
             }
+        }
+
+        List<string> wrapText(string text, int maxCharsPerLine)
+        {
+            var words = text.Split(new char[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries); // Split by space and newline
+            var lines = new List<string>();
+            var currentLine = "";
+
+            foreach (var word in words)
+            {
+                // If adding the next word (plus a space) exceeds maxCharsPerLine
+                if ((currentLine + word).Length + (currentLine.Length > 0 ? 1 : 0) <= maxCharsPerLine)
+                {
+                    currentLine += (currentLine.Length > 0 ? " " : "") + word;
+                }
+                else
+                {
+                    // Add currentLine to lines, if not empty
+                    if (!string.IsNullOrEmpty(currentLine))
+                    {
+                        lines.Add(currentLine.Trim());
+                    }
+                    // Start new line with the current word
+                    currentLine = word;
+                }
+            }
+
+            // Add the last line if it's not empty
+            if (!string.IsNullOrEmpty(currentLine))
+                lines.Add(currentLine.Trim());
+
+            return lines;
         }
 
         private void DrawHeader(XGraphics gfx, PdfPage page, string reportTitle, string tipoReporte, int anio, int mes, int idFinanciamiento, int currentPage, int totalPages)
