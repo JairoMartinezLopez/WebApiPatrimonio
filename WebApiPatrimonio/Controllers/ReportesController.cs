@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using WebApiPatrimonio.Context;
+using WebApiPatrimonio.Models;
 
 namespace WebApiPatrimonio.Controllers
 {
@@ -450,12 +451,6 @@ namespace WebApiPatrimonio.Controllers
                             DrawFooter(gfx, page);
                             currentY = contentMarginTop;
                             DrawTableHeaders();
-                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft, currentY + cellPadding, contentWidth, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
-                            gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft + 10, currentY + cellPadding, contentWidth - 10, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
                         }
 
                         // Dibuja el total de artículos del bien y el costo total del bien
@@ -476,12 +471,6 @@ namespace WebApiPatrimonio.Controllers
                             DrawFooter(gfx, page);
                             currentY = contentMarginTop;
                             DrawTableHeaders();
-                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft, currentY + cellPadding, contentWidth, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
-                            gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft + 10, currentY + cellPadding, contentWidth - 10, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
                         }
                         currentY += rowHeight + 5;
                     }
@@ -543,13 +532,12 @@ namespace WebApiPatrimonio.Controllers
             [FromQuery] int idFinanciamiento,
             [FromQuery] int anio,
             [FromQuery] int mes,
-            [FromQuery] int idUnidadResponsable, // Renombrado para coincidir con el SP
+            [FromQuery] int idUnidadResponsable,
             [FromQuery] int idArea,
-            [FromQuery] bool aplicaUMAS) // Renombrado para coincidir con el SP
+            [FromQuery] bool aplicaUMAS)
         {
             try
             {
-                // La estructura de datos se actualiza para reflejar las columnas del SP
                 var concentradoData = new List<(string TipoBien, string Bien, string Financiamiento, int Cantidad, double CostoTotal)>();
 
                 using (var connection = _context.Database.GetDbConnection())
@@ -565,9 +553,9 @@ namespace WebApiPatrimonio.Controllers
                         command.Parameters.Add(new SqlParameter("@idFinanciamiento", idFinanciamiento));
                         command.Parameters.Add(new SqlParameter("@Anio", anio));
                         command.Parameters.Add(new SqlParameter("@Mes", mes));
-                        command.Parameters.Add(new SqlParameter("@IdUnidadResponsable", idUnidadResponsable)); // Coincide con el nuevo nombre
-                        command.Parameters.Add(new SqlParameter("@IdArea", idArea)); // Coincide con el nuevo nombre
-                        command.Parameters.Add(new SqlParameter("@AplicaUMAS", aplicaUMAS)); // Coincide con el nuevo nombre
+                        command.Parameters.Add(new SqlParameter("@IdUnidadResponsable", idUnidadResponsable));
+                        command.Parameters.Add(new SqlParameter("@IdArea", idArea));
+                        command.Parameters.Add(new SqlParameter("@AplicaUMAS", aplicaUMAS));
 
                         using (var reader = await command.ExecuteReaderAsync())
                         {
@@ -576,9 +564,9 @@ namespace WebApiPatrimonio.Controllers
                                 concentradoData.Add((
                                     reader["TipoBien"]?.ToString(),
                                     reader["Bien"]?.ToString(),
-                                    reader["Financiamiento"]?.ToString(), // Nuevo campo
-                                    Convert.ToInt32(reader["Cantidad"]),   // Nuevo campo
-                                    Convert.ToDouble(reader["CostoTotal"])// Coincide con el nuevo nombre del SP
+                                    reader["Financiamiento"]?.ToString(), 
+                                    Convert.ToInt32(reader["Cantidad"]),  
+                                    Convert.ToDouble(reader["CostoTotal"])
                                 ));
                             }
                         }
@@ -594,7 +582,7 @@ namespace WebApiPatrimonio.Controllers
                 page.Orientation = PdfSharpCore.PageOrientation.Landscape;
                 page.Size = PdfSharpCore.PageSize.A3;
 
-                // Obtener las dimensiones de la página actual (ahora en landscape)
+                // Obtener las dimensiones de la página actual
                 double pageWidth = page.Width;
                 double pageHeight = page.Height;
 
@@ -625,7 +613,6 @@ namespace WebApiPatrimonio.Controllers
 
                 XGraphics gfx = XGraphics.FromPdfPage(page);
 
-                // Cambia el título del reporte en el encabezado
                 DrawHeader(gfx, page, "REPORTE DE BAJAS CONCENTRADO", "BAJAS", anio, mes, idFinanciamiento, pageNumber, 1);
                 DrawFooter(gfx, page);
 
@@ -643,16 +630,15 @@ namespace WebApiPatrimonio.Controllers
                 gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width + col3Width + col4Width, currentY, contentMarginLeft + col1Width + col2Width + col3Width + col4Width, currentY + rowHeight);
 
                 currentY += rowHeight;
-                double totalCostoGeneral = 0; // Renombrado para claridad
+                double totalCostoGeneral = 0;
 
                 foreach (var item in concentradoData)
                 {
-                    // Nota: page.Height ya reflejará la altura de la página en orientación Landscape.
-                    if (currentY + rowHeight > pageHeight - contentMarginBottom) // Usar pageHeight
+                    if (currentY + rowHeight > pageHeight - contentMarginBottom)
                     {
                         pageNumber++;
                         page = document.AddPage();
-                        page.Orientation = PdfSharpCore.PageOrientation.Landscape; // Asegurarse de que las nuevas páginas también sean landscape
+                        page.Orientation = PdfSharpCore.PageOrientation.Landscape;
                         page.Size = PdfSharpCore.PageSize.A3;
                         gfx = XGraphics.FromPdfPage(page);
 
@@ -940,12 +926,6 @@ namespace WebApiPatrimonio.Controllers
                                 DrawFooter(gfx, page);
                                 currentY = contentMarginTop;
                                 DrawTableHeaders();
-                                gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
-                                    new XRect(contentMarginLeft, currentY + cellPadding, contentWidth, rowHeight), XStringFormats.TopLeft);
-                                currentY += rowHeight;
-                                gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
-                                    new XRect(contentMarginLeft + 10, currentY + cellPadding, contentWidth - 10, rowHeight), XStringFormats.TopLeft);
-                                currentY += rowHeight;
                             }
 
                             gfx.DrawLine(dottedBottomBorderPen, contentMarginLeft, currentY + rowHeight, contentMarginLeft + contentWidth, currentY + rowHeight);
@@ -1008,7 +988,6 @@ namespace WebApiPatrimonio.Controllers
                             currentY += rowHeight;
                         }
 
-                        // Dibuja el "Total de artículos del bien"
                         if (currentY + rowHeight > page.Height - contentMarginBottom)
                         {
                             pageNumber++;
@@ -1020,12 +999,6 @@ namespace WebApiPatrimonio.Controllers
                             DrawFooter(gfx, page);
                             currentY = contentMarginTop;
                             DrawTableHeaders();
-                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft, currentY + cellPadding, contentWidth, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
-                            gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft + 10, currentY + cellPadding, contentWidth - 10, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
                         }
 
                         // Dibuja el total de artículos del bien y el costo total del bien
@@ -1046,12 +1019,6 @@ namespace WebApiPatrimonio.Controllers
                             DrawFooter(gfx, page);
                             currentY = contentMarginTop;
                             DrawTableHeaders();
-                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft, currentY + cellPadding, contentWidth, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
-                            gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft + 10, currentY + cellPadding, contentWidth - 10, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
                         }
                         currentY += rowHeight + 5;
                     }
@@ -1204,16 +1171,15 @@ namespace WebApiPatrimonio.Controllers
                 gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
 
                 currentY += rowHeight;
-                double totalCostoGeneral = 0; // Renombrado para claridad
+                double totalCostoGeneral = 0; 
 
                 foreach (var item in concentradoData)
                 {
-                    // Nota: page.Height ya reflejará la altura de la página en orientación Landscape.
-                    if (currentY + rowHeight > pageHeight - contentMarginBottom) // Usar pageHeight
+                    if (currentY + rowHeight > pageHeight - contentMarginBottom)
                     {
                         pageNumber++;
                         page = document.AddPage();
-                        page.Orientation = PdfSharpCore.PageOrientation.Landscape; // Asegurarse de que las nuevas páginas también sean landscape
+                        page.Orientation = PdfSharpCore.PageOrientation.Landscape;
                         page.Size = PdfSharpCore.PageSize.A3;
                         gfx = XGraphics.FromPdfPage(page);
 
@@ -1568,13 +1534,6 @@ namespace WebApiPatrimonio.Controllers
                                 DrawFooter(gfx, page);
                                 currentY = contentMarginTop;
                                 DrawTableHeaders();
-                                gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
-                                    new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
-                                currentY += rowHeight;
-                                gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
-                                    new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeight), XStringFormats.TopLeft);
-                                currentY += rowHeight;
-                                gfx.DrawLine(XPens.Black, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
                             }
 
                             currentX = contentMarginLeft;
@@ -1616,13 +1575,6 @@ namespace WebApiPatrimonio.Controllers
                             DrawFooter(gfx, page);
                             currentY = contentMarginTop;
                             DrawTableHeaders();
-                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
-                            gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
-                            gfx.DrawLine(XPens.Black, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
                         }
 
                         string totalArticulosBien = $"TOTAL DE ARTÍCULOS DEL BIEN: {bienGroup.TotalArticulosBien}";
@@ -1651,13 +1603,6 @@ namespace WebApiPatrimonio.Controllers
                             DrawFooter(gfx, page);
                             currentY = contentMarginTop;
                             DrawTableHeaders();
-                            gfx.DrawString(tipoBienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
-                            gfx.DrawString(bienHeader, groupHeaderFont, XBrushes.Black,
-                                new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeight), XStringFormats.TopLeft);
-                            currentY += rowHeight;
-                            gfx.DrawLine(XPens.Black, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
                         }
 
                         gfx.DrawString(costoTotalBien, summaryFont, XBrushes.Black,
@@ -1725,6 +1670,404 @@ namespace WebApiPatrimonio.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error al generar reporte de transferencias detallado: {ex.Message}");
+            }
+        }
+
+        // GET: api/Reportes/ReporteTipoBienPDF
+        [HttpGet("ReporteTipoBienPDF")]
+        public async Task<IActionResult> GenerarReporteTipoBienPDF(
+            [FromQuery] int idGeneral,
+            [FromQuery] int idPantalla,
+            [FromQuery] int idFinanciamiento,
+            [FromQuery] int idTipoBien,
+            [FromQuery] int idBien,
+            [FromQuery] int idArea,
+            [FromQuery] bool umas,
+            [FromQuery] int unidadResponsable)
+        {
+            try
+            {
+                var desglosadoData = new List<(string Adscripcion, string ClaveTipoBien, string NombreTipoBien, string ClaveBien, string BienDesc, double Costo, string NoInventario, string Aviso, string Marca, string Serie, string Modelo, string NumeroFactura, string FolioFiscal, string EdoFisico)>();
+
+                using (var connection = _context.Database.GetDbConnection())
+                {
+                    await connection.OpenAsync();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "PA_SEL_ReporteTipoBien";
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@IdGeneral", idGeneral));
+                        command.Parameters.Add(new SqlParameter("@IdPantalla", idPantalla));
+                        command.Parameters.Add(new SqlParameter("@idFinanciamiento", idFinanciamiento));
+                        command.Parameters.Add(new SqlParameter("@idTipoBien", idTipoBien));
+                        command.Parameters.Add(new SqlParameter("@idBien", idBien));
+                        command.Parameters.Add(new SqlParameter("@idArea", idArea));
+                        command.Parameters.Add(new SqlParameter("@Umas", umas));
+                        command.Parameters.Add(new SqlParameter("@UnidadResponsable", unidadResponsable));
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                desglosadoData.Add((
+                                    reader["Adscripcion"]?.ToString(),
+                                    reader["Clave"]?.ToString(),
+                                    reader["NombreTipoBien"]?.ToString(),
+                                    reader["ClaveBien"]?.ToString(),
+                                    reader["BienDesc"]?.ToString(),
+                                    Convert.ToDouble(reader["Costo"]),
+                                    reader["NoInventario"]?.ToString(),
+                                    reader["Aviso"]?.ToString(),
+                                    reader["Marca"]?.ToString(),
+                                    reader["Serie"]?.ToString(),
+                                    reader["Modelo"]?.ToString(),
+                                    reader["NumeroFactura"]?.ToString(),
+                                    reader["FolioFiscal"]?.ToString(),
+                                    reader["EdoFisico"]?.ToString()
+                                ));
+                            }
+                        }
+                    }
+                }
+
+                var groupedData = desglosadoData
+                    .GroupBy(item => new { item.ClaveTipoBien, item.NombreTipoBien })
+                    .Select(g1 => new
+                    {
+                        TipoBienKey = g1.Key,
+                        TipoBienItems = g1.GroupBy(item => new { item.ClaveBien, item.BienDesc })
+                                        .Select(g2 => new
+                                        {
+                                            BienKey = g2.Key,
+                                            BienItems = g2.OrderBy(item => item.NoInventario).ToList(),
+                                            TotalArticulosBien = g2.Count(),
+                                            CostoTotalBien = g2.Sum(item => item.Costo)
+                                        }).ToList(),
+                        SubtotalTipoBien = g1.Sum(item => item.Costo),
+                        TotalArticulosTipoBien = g1.Count()
+                    }).ToList();
+
+                using var ms = new MemoryStream();
+                using var document = new PdfDocument();
+                document.Info.Title = "Reporte de Bienes por Tipo Detallado";
+
+                PdfPage page = document.AddPage();
+                page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                page.Size = PdfSharpCore.PageSize.Legal;
+
+                XGraphics gfx = XGraphics.FromPdfPage(page);
+
+                double contentMarginTop = 150;
+                double contentMarginBottom = 70; // Aumentamos para el espacio de firmas
+                double currentY = contentMarginTop;
+
+                XFont tableHeaderFont = new XFont("Arial", 8, XFontStyle.Bold);
+                XFont tableContentFont = new XFont("Arial", 7, XFontStyle.Regular);
+                XFont groupHeaderFont = new XFont("Arial", 9, XFontStyle.Bold);
+                XFont summaryFont = new XFont("Arial", 8, XFontStyle.Regular);
+                double rowHeightBase = 18;
+                double cellPadding = 3;
+                double lineHeight = 10;
+
+                XPen solidBorderPen = XPens.Black;
+                XPen dottedBottomBorderPen = new XPen(XColor.FromArgb(150, 0, 0, 0), 0.5);
+                dottedBottomBorderPen.DashStyle = XDashStyle.Dot;
+
+                var columnHeaders = new (string Name, double WidthFactor)[]
+                {
+                ("UBICACIÓN", 0.24),
+                ("COSTO", 0.05),
+                ("NO. INVENT", 0.11),
+                ("AVISO", 0.05),
+                ("MARCA", 0.05),
+                ("SERIE", 0.12),
+                ("MODELO", 0.09),
+                ("FACTURA", 0.06),
+                ("EDO. FÍSICO", 0.05)
+                };
+
+                double totalFactor = columnHeaders.Sum(ch => ch.WidthFactor);
+                double availableContentWidth = page.Width - 80;
+                double[] colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
+                double actualTableWidth = colWidths.Sum();
+                double contentMarginLeft = (page.Width - actualTableWidth) / 2;
+
+                int pageNumber = 1;
+                int totalPages = 1; // Para el cálculo final de páginas, se podría hacer un pre-render o estimación. Por ahora, asumimos 1.
+
+                double totalGeneralPesos = 0;
+                int totalGeneralArticulos = 0;
+
+                // Función para dibujar los encabezados de la tabla (las dos filas: "DESCRIPCIÓN TIPO BIEN" y los nombres de columna)
+                Action DrawTableContentHeaders = () =>
+                {
+                    double currentX = contentMarginLeft;
+
+                    // 1. Fila de encabezado agrupado: "DESCRIPCIÓN BIEN"
+                    double descripcionBienWidth = colWidths[0] + colWidths[1]; // Agrupa UBICACIÓN + COSTO
+                    gfx.DrawRectangle(XPens.Black, currentX, currentY, descripcionBienWidth, rowHeightBase);
+                    gfx.DrawString("DESCRIPCIÓN TIPO BIEN", tableHeaderFont, XBrushes.Black,
+                        new XRect(currentX, currentY, descripcionBienWidth, rowHeightBase), XStringFormats.Center);
+
+                    currentY += rowHeightBase;
+
+                    // 2. Segunda fila: encabezados normales
+                    currentX = contentMarginLeft;
+                    for (int i = 0; i < columnHeaders.Length; i++)
+                    {
+                        gfx.DrawRectangle(XPens.Black, currentX, currentY, colWidths[i], rowHeightBase);
+                        gfx.DrawString(columnHeaders[i].Name, tableHeaderFont, XBrushes.Black,
+                            new XRect(currentX + cellPadding, currentY + cellPadding, colWidths[i] - cellPadding * 2, rowHeightBase - cellPadding * 2), XStringFormats.Center);
+                        currentX += colWidths[i];
+                    }
+                    currentY += rowHeightBase;
+                };
+
+                DrawHeader(gfx, page, "REPORTE DE BIENES POR TIPO DETALLADO", "BIENES POR TIPO", 0, 0, idFinanciamiento, pageNumber, totalPages);
+                DrawFooter(gfx, page);
+                DrawTableContentHeaders(); // Dibuja los encabezados de la tabla al inicio de la primera página
+
+                string currentTipoBienHeader = "";
+                string currentBienHeader = "";
+
+                foreach (var tipoBienGroup in groupedData)
+                {
+                    // Verifica si el Tipo de Bien actual es diferente al de la página anterior
+                    // Si es un nuevo Tipo de Bien, o es la primera vez que se dibuja
+                    if (currentTipoBienHeader != $"{tipoBienGroup.TipoBienKey.ClaveTipoBien} {tipoBienGroup.TipoBienKey.NombreTipoBien}")
+                    {
+                        currentTipoBienHeader = $"{tipoBienGroup.TipoBienKey.ClaveTipoBien} {tipoBienGroup.TipoBienKey.NombreTipoBien}";
+                        // Si el espacio es insuficiente para el encabezado del Tipo de Bien y al menos un Bien
+                        if (currentY + rowHeightBase * 3 > page.Height - contentMarginBottom)
+                        {
+                            pageNumber++;
+                            page = document.AddPage();
+                            page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                            page.Size = PdfSharpCore.PageSize.Legal;
+                            gfx = XGraphics.FromPdfPage(page);
+                            DrawHeader(gfx, page, "REPORTE DE BIENES POR TIPO DETALLADO", "BIENES POR TIPO", 0, 0, idFinanciamiento, pageNumber, totalPages);
+                            DrawFooter(gfx, page);
+                            currentY = contentMarginTop;
+                            DrawTableContentHeaders(); // Siempre dibuja los encabezados de la tabla en una nueva página
+                        }
+
+                        // Dibuja el encabezado del tipo de bien (CAT_TIPOSBIENES)
+                        gfx.DrawString(currentTipoBienHeader, groupHeaderFont, XBrushes.Black,
+                            new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeightBase), XStringFormats.TopLeft);
+                        currentY += rowHeightBase;
+                        currentBienHeader = ""; // Resetear el encabezado del bien cuando hay un nuevo tipo de bien
+                    }
+
+                    foreach (var bienGroup in tipoBienGroup.TipoBienItems)
+                    {
+                        // Verifica si el Bien actual es diferente al de la página anterior
+                        // Si es un nuevo Bien, o es la primera vez que se dibuja
+                        if (currentBienHeader != $"{bienGroup.BienKey.ClaveBien} {bienGroup.BienKey.BienDesc}")
+                        {
+                            currentBienHeader = $"{bienGroup.BienKey.ClaveBien} {bienGroup.BienKey.BienDesc}";
+                            // Si el espacio es insuficiente para el encabezado del Bien y al menos un item
+                            if (currentY + rowHeightBase * 3 > page.Height - contentMarginBottom)
+                            {
+                                pageNumber++;
+                                page = document.AddPage();
+                                page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                                page.Size = PdfSharpCore.PageSize.Legal;
+                                gfx = XGraphics.FromPdfPage(page);
+                                DrawHeader(gfx, page, "REPORTE DE BIENES POR TIPO DETALLADO", "BIENES POR TIPO", 0, 0, idFinanciamiento, pageNumber, totalPages);
+                                DrawFooter(gfx, page);
+                                currentY = contentMarginTop;
+                                DrawTableContentHeaders(); // Siempre dibuja los encabezados de la tabla en una nueva página
+
+                                // También redibuja el encabezado del Tipo de Bien si cambiamos de página
+                                gfx.DrawString(currentTipoBienHeader, groupHeaderFont, XBrushes.Black,
+                                    new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeightBase), XStringFormats.TopLeft);
+                                currentY += rowHeightBase;
+                            }
+
+                            // Dibuja el encabezado del bien (CAT_BIENES)
+                            gfx.DrawString(currentBienHeader, summaryFont, XBrushes.Black,
+                                new XRect(contentMarginLeft + 10, currentY + cellPadding, actualTableWidth - 10, rowHeightBase), XStringFormats.TopLeft);
+                            currentY += rowHeightBase;
+
+                            gfx.DrawLine(solidBorderPen, contentMarginLeft, currentY, contentMarginLeft + actualTableWidth, currentY);
+                        }
+
+                        foreach (var item in bienGroup.BienItems)
+                        {
+                            string[] textos = {
+                            item.Adscripcion,
+                            $"{item.Costo:C2}",
+                            item.NoInventario,
+                            item.Aviso,
+                            item.Marca,
+                            item.Serie,
+                            item.Modelo,
+                            item.NumeroFactura,
+                            item.EdoFisico
+                        };
+
+                            double maxLineCount = 1;
+                            List<List<string>> wrappedTexts = new List<List<string>>();
+
+                            for (int i = 0; i < textos.Length; i++)
+                            {
+                                string text = textos[i] ?? string.Empty;
+                                double cellWidth = colWidths[i];
+                                int aproxCharPerLine = (int)(cellWidth / tableContentFont.Size * (1.0 / 0.6));
+                                if (aproxCharPerLine <= 0) aproxCharPerLine = 1;
+
+                                var lines = wrapText(text, aproxCharPerLine);
+                                wrappedTexts.Add(lines);
+                                maxLineCount = Math.Max(maxLineCount, lines.Count);
+                            }
+
+                            double adjustedRowHeight = maxLineCount * lineHeight + (cellPadding * 2);
+
+                            if (currentY + adjustedRowHeight > page.Height - contentMarginBottom)
+                            {
+                                pageNumber++;
+                                page = document.AddPage();
+                                page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                                page.Size = PdfSharpCore.PageSize.Legal;
+                                gfx = XGraphics.FromPdfPage(page);
+                                DrawHeader(gfx, page, "REPORTE DE BIENES POR TIPO DETALLADO", "BIENES POR TIPO", 0, 0, idFinanciamiento, pageNumber, totalPages);
+                                DrawFooter(gfx, page);
+                                currentY = contentMarginTop;
+                                DrawTableContentHeaders(); // Siempre dibuja los encabezados de la tabla en una nueva página
+                            }
+
+                            double currentX = contentMarginLeft;
+                            for (int colIndex = 0; colIndex < wrappedTexts.Count; colIndex++)
+                            {
+                                var lines = wrappedTexts[colIndex];
+                                double cellWidth = colWidths[colIndex];
+                                double textHeight = lines.Count * lineHeight;
+                                double yOffset = currentY + (adjustedRowHeight - textHeight) / 2 + 4;
+
+                                for (int i = 0; i < lines.Count; i++)
+                                {
+                                    XStringFormat stringFormat = XStringFormats.TopLeft;
+                                    if (columnHeaders[colIndex].Name == "COSTO")
+                                    {
+                                        stringFormat = XStringFormats.TopRight;
+                                    }
+                                    else if (columnHeaders[colIndex].Name == "NO. INVENT" || columnHeaders[colIndex].Name == "FACTURA" || columnHeaders[colIndex].Name == "MARCA")
+                                    {
+                                        stringFormat = XStringFormats.TopCenter;
+                                    }
+
+                                    gfx.DrawString(lines[i], tableContentFont, XBrushes.Black,
+                                        new XRect(currentX + cellPadding, yOffset + i * lineHeight, cellWidth - cellPadding * 2, lineHeight),
+                                        stringFormat);
+                                }
+                                currentX += cellWidth;
+                            }
+                            if (item != bienGroup.BienItems.Last())
+                            {
+                                gfx.DrawLine(dottedBottomBorderPen, contentMarginLeft, currentY + adjustedRowHeight, contentMarginLeft + actualTableWidth, currentY + adjustedRowHeight);
+                            }
+                            currentY += adjustedRowHeight;
+                        }
+
+                        string totalArticulosBien = $"TOTAL DE ARTÍCULOS DEL BIEN: {bienGroup.TotalArticulosBien}";
+                        string costoTotalBien = $"COSTO TOTAL DEL BIEN: {bienGroup.CostoTotalBien:C2}";
+
+                        if (currentY + rowHeightBase * 2 > page.Height - contentMarginBottom)
+                        {
+                            pageNumber++;
+                            page = document.AddPage();
+                            page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                            page.Size = PdfSharpCore.PageSize.Legal;
+                            gfx = XGraphics.FromPdfPage(page);
+                            DrawHeader(gfx, page, "REPORTE DE BIENES POR TIPO DETALLADO", "BIENES POR TIPO", 0, 0, idFinanciamiento, pageNumber, totalPages);
+                            DrawFooter(gfx, page);
+                            currentY = contentMarginTop;
+                            DrawTableContentHeaders(); // Siempre dibuja los encabezados de la tabla en una nueva página
+
+                            // También redibuja el encabezado del Tipo de Bien si cambiamos de página
+                            gfx.DrawString(currentTipoBienHeader, groupHeaderFont, XBrushes.Black,
+                                new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeightBase), XStringFormats.TopLeft);
+                            currentY += rowHeightBase;
+                        }
+
+                        gfx.DrawString(totalArticulosBien, summaryFont, XBrushes.Black,
+                            new XRect(contentMarginLeft + 20, currentY + cellPadding, actualTableWidth - 20, rowHeightBase - cellPadding * 2), XStringFormats.TopLeft);
+                        currentY += rowHeightBase;
+
+                        if (currentY + rowHeightBase > page.Height - contentMarginBottom)
+                        {
+                            pageNumber++;
+                            page = document.AddPage();
+                            page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                            page.Size = PdfSharpCore.PageSize.Legal;
+                            gfx = XGraphics.FromPdfPage(page);
+                            DrawHeader(gfx, page, "REPORTE DE BIENES POR TIPO DETALLADO", "BIENES POR TIPO", 0, 0, idFinanciamiento, pageNumber, totalPages);
+                            DrawFooter(gfx, page);
+                            currentY = contentMarginTop;
+                            DrawTableContentHeaders(); // Siempre dibuja los encabezados de la tabla en una nueva página
+
+                            // También redibuja el encabezado del Tipo de Bien si cambiamos de página
+                            gfx.DrawString(currentTipoBienHeader, groupHeaderFont, XBrushes.Black,
+                                new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeightBase), XStringFormats.TopLeft);
+                            currentY += rowHeightBase;
+                        }
+
+                        gfx.DrawString(costoTotalBien, summaryFont, XBrushes.Black,
+                            new XRect(contentMarginLeft + 20, currentY + cellPadding, actualTableWidth - 20, rowHeightBase - cellPadding * 2), XStringFormats.TopLeft);
+                        currentY += rowHeightBase + 5;
+                    }
+
+                    if (currentY + rowHeightBase > page.Height - contentMarginBottom)
+                    {
+                        pageNumber++;
+                        page = document.AddPage();
+                        page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                        page.Size = PdfSharpCore.PageSize.Legal;
+                        gfx = XGraphics.FromPdfPage(page);
+                        DrawHeader(gfx, page, "REPORTE DE BIENES POR TIPO DETALLADO", "BIENES POR TIPO", 0, 0, idFinanciamiento, pageNumber, totalPages);
+                        DrawFooter(gfx, page);
+                        currentY = contentMarginTop;
+                        DrawTableContentHeaders(); // Siempre dibuja los encabezados de la tabla en una nueva página
+                    }
+
+                    string subtotalTipoBienText = $"SUBTOTAL POR TIPO DE BIEN: {tipoBienGroup.SubtotalTipoBien:C2}";
+                    gfx.DrawString(subtotalTipoBienText, groupHeaderFont, XBrushes.Black,
+                        new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeightBase - cellPadding * 2), XStringFormats.TopLeft);
+                    currentY += rowHeightBase + 10;
+
+                    totalGeneralPesos += tipoBienGroup.SubtotalTipoBien;
+                    totalGeneralArticulos += tipoBienGroup.TotalArticulosTipoBien;
+                }
+
+                // TOTAL GENERAL
+                if (currentY + rowHeightBase * 2 > page.Height - contentMarginBottom) // Verifica si hay espacio para el total general y las firmas
+                {
+                    pageNumber++;
+                    page = document.AddPage();
+                    page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                    page.Size = PdfSharpCore.PageSize.Legal;
+                    gfx = XGraphics.FromPdfPage(page);
+                    DrawHeader(gfx, page, "REPORTE DE BIENES POR TIPO DETALLADO", "BIENES POR TIPO", 0, 0, idFinanciamiento, pageNumber, totalPages);
+                    DrawFooter(gfx, page);
+                    currentY = contentMarginTop; // O ajusta según donde quieras que aparezca en la nueva página
+                }
+
+                string totalGeneralText = $"TOTAL GENERAL EN PESOS: {totalGeneralPesos:C2}           CANTIDAD TOTAL DE BIENES: {totalGeneralArticulos}";
+                gfx.DrawString(totalGeneralText, groupHeaderFont, XBrushes.Black,
+                    new XRect(contentMarginLeft, currentY + cellPadding, actualTableWidth, rowHeightBase - cellPadding * 2), XStringFormats.TopLeft);
+                currentY += rowHeightBase + 10; // Espacio después de los totales generales
+
+                // Dibuja las firmas al final del documento
+                DrawSignatures(gfx, page, currentY);
+
+                document.Save(ms);
+                ms.Position = 0;
+                return File(ms.ToArray(), "application/pdf", $"ReporteTipoBien_{DateTime.Now:yyyyMMddHHmmss}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al generar reporte de bienes por tipo detallado: {ex.Message}");
             }
         }
 
@@ -1806,14 +2149,69 @@ namespace WebApiPatrimonio.Controllers
 
             string mesNombre = mes == 0 ? "0" :CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(mes);
             string fechaReporte = mes == 0 ? $"{anio}" : $"{mesNombre.ToUpper()} DE {anio}"; // Mes 0 para anual, Mes X para mensual
-            gfx.DrawString($"CONCENTRADO DE {tipoReporte} CORRESPONDIENTE A: {fechaReporte}", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
 
-            string financiamientoText = idFinanciamiento == 0 ? "TODOS" : idFinanciamiento.ToString();
+            if (tipoReporte != "BIENES POR TIPO")
+            {
+                gfx.DrawString($"CONCENTRADO DE {tipoReporte} CORRESPONDIENTE A: {fechaReporte}", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
+            }
+            else {
+                gfx.DrawString($"REPORTE CONSECUTIVO POR TIPO Y NOMBRE DE BIEN", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
+            }
+
+                string financiamientoText = idFinanciamiento == 0 ? "TODOS" : idFinanciamiento.ToString();
             gfx.DrawString($"FUENTE DE FINANCIAMIENTO: {financiamientoText}", fontBold, XBrushes.Black, new XRect(0, y + 75, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
 
             gfx.DrawString($"Pág. {currentPage} de {totalPages}", fontBold, XBrushes.Black, new XPoint(page.Width - x - 70, y + 83)); // Paginación (esquina superior derecha)
 
             gfx.DrawLine(XPens.Black, x, y + 100, page.Width - x, y + 100); // Dibuja una línea después del encabezado
+        }
+
+        private void DrawSignatures(XGraphics gfx, PdfPage page, double currentY)
+        {
+            XFont signatureLabelFont = new XFont("Arial", 8, XFontStyle.Regular);
+            XFont signatureNameFont = new XFont("Arial", 9, XFontStyle.Bold);
+            XPen linePen = XPens.Black;
+
+            double signatureBlockWidth = page.Width / 3.5; // Ancho para cada bloque de firma
+            double spacing = 20; // Espacio entre bloques
+            double startX = (page.Width - (signatureBlockWidth * 3 + spacing * 2)) / 2; // Centrar los bloques
+
+            currentY += 20; // Espacio después de los totales
+
+            // ELABORÓ
+            XRect elaboradoRect = new XRect(startX, currentY, signatureBlockWidth, 15);
+            gfx.DrawString("ELABORÓ", signatureNameFont, XBrushes.Black, elaboradoRect, XStringFormats.Center);
+            currentY += 70; // Espacio para la línea y el nombre
+            gfx.DrawLine(linePen, startX, currentY, startX + signatureBlockWidth, currentY);
+            currentY += 5; // Espacio entre línea y texto
+            XRect deptoElaboroRect = new XRect(startX, currentY, signatureBlockWidth, 30);
+            gfx.DrawString("DEPTO. DE CONTROL PATRIMONIAL Y BIENES EN\nCUSTODIA", signatureLabelFont, XBrushes.Black, deptoElaboroRect, XStringFormats.Center);
+
+            // Restablecer currentY para el siguiente bloque
+            currentY -= 75; // Vuelve a la altura inicial del bloque
+
+            // DICTAMEN
+            startX += signatureBlockWidth + spacing;
+            XRect dictamenRect = new XRect(startX, currentY, signatureBlockWidth, 15);
+            gfx.DrawString("DICTAMEN", signatureNameFont, XBrushes.Black, dictamenRect, XStringFormats.Center);
+            currentY += 70;
+            gfx.DrawLine(linePen, startX, currentY, startX + signatureBlockWidth, currentY);
+            currentY += 5;
+            XRect deptoDictamenRect = new XRect(startX, currentY, signatureBlockWidth, 30);
+            gfx.DrawString("DEPTO. DE SERVICIOS GENERALES", signatureLabelFont, XBrushes.Black, deptoDictamenRect, XStringFormats.Center);
+
+            // Restablecer currentY para el siguiente bloque
+            currentY -= 75;
+
+            // AUTORIZÓ
+            startX += signatureBlockWidth + spacing;
+            XRect autorizoRect = new XRect(startX, currentY, signatureBlockWidth, 15);
+            gfx.DrawString("AUTORIZÓ", signatureNameFont, XBrushes.Black, autorizoRect, XStringFormats.Center);
+            currentY += 70;
+            gfx.DrawLine(linePen, startX, currentY, startX + signatureBlockWidth, currentY);
+            currentY += 5;
+            XRect direccionAutorizoRect = new XRect(startX, currentY, signatureBlockWidth, 30);
+            gfx.DrawString("DIRECCIÓN DE ADMINISTRACIÓN", signatureLabelFont, XBrushes.Black, direccionAutorizoRect, XStringFormats.Center);
         }
 
         private void DrawFooter(XGraphics gfx, PdfPage page)
