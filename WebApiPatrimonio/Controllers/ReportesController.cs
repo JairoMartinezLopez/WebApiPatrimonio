@@ -1673,6 +1673,180 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
+        // GET: api/Reportes/ReporteTransferenciaConcentradoPDF
+        [HttpGet("ReporteTipoBienPesosPDF")]
+        public async Task<IActionResult> GenerarReporteTipoBienPesosPDF(
+            [FromQuery] int idGeneral,
+            [FromQuery] int idPantalla,
+            [FromQuery] int idFinanciamiento,
+            [FromQuery] int idTipoBien,
+            [FromQuery] int anio,
+            [FromQuery] int mes,
+            [FromQuery] int idBien,
+            [FromQuery] int idArea,
+            [FromQuery] bool aplicaUMAS,
+            [FromQuery] int idUnidadResponsable)
+        {
+            try
+            {
+                // La estructura de datos se actualiza para reflejar las columnas del SP
+                var concentradoData = new List<(string Clave, string NombreTipoBien, double CostoTotal)>();
+
+                using (var connection = _context.Database.GetDbConnection())
+                {
+                    await connection.OpenAsync();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "PA_SEL_ReporteTipoBienPesos";
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@IdGeneral", idGeneral));
+                        command.Parameters.Add(new SqlParameter("@IdPantalla", idPantalla));
+                        command.Parameters.Add(new SqlParameter("@idFinanciamiento", idFinanciamiento));
+                        command.Parameters.Add(new SqlParameter("@idTipoBien", idTipoBien)); 
+                        command.Parameters.Add(new SqlParameter("@Anio", anio));
+                        //command.Parameters.Add(new SqlParameter("@Mes", mes));
+                        command.Parameters.Add(new SqlParameter("@idBien", idBien));
+                        command.Parameters.Add(new SqlParameter("@idArea", idArea));
+                        command.Parameters.Add(new SqlParameter("@UnidadResponsable", idUnidadResponsable));
+                        command.Parameters.Add(new SqlParameter("@Umas", aplicaUMAS));
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                concentradoData.Add((
+                                    reader["Clave"]?.ToString(),
+                                    reader["NombreTipoBien"]?.ToString(),
+                                    Convert.ToDouble(reader["SumaCostosPorTipoBien"])
+                                ));
+                            }
+                        }
+                    }
+                }
+
+                using var ms = new MemoryStream();
+                using var document = new PdfDocument();
+                document.Info.Title = "Reporte de Tipo Bien Pesos"; // Título del documento actualizado
+
+
+                PdfPage page = document.AddPage();
+                page.Size = PdfSharpCore.PageSize.A4;
+
+                // Obtener las dimensiones de la página actual (ahora en landscape)
+                double pageWidth = page.Width;
+                double pageHeight = page.Height;
+
+                // Márgenes verticales fijos
+                double contentMarginTop = 150;
+                double contentMarginBottom = 70;
+
+                // Anchos de columna ajustados para las columnas existentes en el SP
+                double col1Width = 80;  // TipoBien
+                double col2Width = 350;  // Bien 
+                double col3Width = 85;  // CostoTotal
+                double totalTableWidth = col1Width + col2Width + col3Width;
+
+                // Calcular el margen izquierdo para centrar la tabla
+                double contentMarginLeft = (pageWidth - totalTableWidth) / 2;
+
+
+                XFont tableHeaderFont = new XFont("Arial", 9, XFontStyle.Bold);
+                XFont tableContentFont = new XFont("Arial", 8, XFontStyle.Regular);
+                XFont summaryFont = new XFont("Arial", 8, XFontStyle.Bold); // Para el total
+
+                double cellPadding = 5;
+                double rowHeight = 20;
+
+                double currentY = contentMarginTop;
+                int pageNumber = 1;
+
+                XGraphics gfx = XGraphics.FromPdfPage(page);
+
+                // Cambia el título del reporte en el encabezado
+                DrawHeader(gfx, page, "REPORTE DE TIPO BIEN EN PESOS", "TIPO DE BIEN PESOS EN GENERAL", anio, mes, idFinanciamiento, pageNumber, 1);
+                DrawFooter(gfx, page);
+
+                // Encabezados de la tabla
+                gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
+                gfx.DrawString("TIPO BIEN", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width, rowHeight), XStringFormats.TopCenter);
+                gfx.DrawString("DESCRIPCIÓN BIEN", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + cellPadding, currentY + cellPadding, col2Width, rowHeight), XStringFormats.TopCenter);
+                gfx.DrawString("IMPORTE", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopCenter);
+
+                gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width, currentY, contentMarginLeft + col1Width, currentY + rowHeight);
+                gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
+
+                currentY += rowHeight;
+                double totalCostoGeneral = 0;
+
+                foreach (var item in concentradoData)
+                {
+                    if (currentY + rowHeight > pageHeight - contentMarginBottom)
+                    {
+                        pageNumber++;
+                        page = document.AddPage();
+                        //page.Orientation = PdfSharpCore.PageOrientation.Landscape;
+                        //page.Size = PdfSharpCore.PageSize.A4;
+                        gfx = XGraphics.FromPdfPage(page);
+
+                        DrawHeader(gfx, page, "REPORTE DE TIPO BIEN EN PESOS", "TIPO DE BIEN PESOS EN GENERAL", anio, mes, idFinanciamiento, pageNumber, 1);
+                        DrawFooter(gfx, page);
+
+                        currentY = contentMarginTop;
+                        gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
+                        gfx.DrawString("TIPO BIEN", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width, rowHeight), XStringFormats.TopCenter);
+                        gfx.DrawString("DESCRIPCIÓN BIEN", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + cellPadding, currentY + cellPadding, col2Width, rowHeight), XStringFormats.TopLeft);
+                        gfx.DrawString("IMPORTE", tableHeaderFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopLeft);
+
+                        gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width, currentY, contentMarginLeft + col1Width, currentY + rowHeight);
+                        gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
+
+                        currentY += rowHeight;
+                    }
+
+                    gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
+                    gfx.DrawString(item.Clave, tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + cellPadding, currentY + cellPadding, col1Width, rowHeight), XStringFormats.TopCenter);
+                    gfx.DrawString(item.NombreTipoBien, tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + cellPadding, currentY + cellPadding, col2Width, rowHeight), XStringFormats.TopLeft);
+                    gfx.DrawString($"{item.CostoTotal:C2}", tableContentFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopCenter);
+
+                    gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width, currentY, contentMarginLeft + col1Width, currentY + rowHeight);
+                    gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
+
+                    totalCostoGeneral += item.CostoTotal;
+                    currentY += rowHeight;
+                }
+
+                if (concentradoData.Any())
+                {
+                    if (currentY + rowHeight > pageHeight - contentMarginBottom) // Usar pageHeight
+                    {
+                        pageNumber++;
+                        page = document.AddPage();
+                        //page.Orientation = PdfSharpCore.PageOrientation.Landscape; // Asegurarse de que las nuevas páginas también sean landscape
+                        //page.Size = PdfSharpCore.PageSize.A4;
+                        gfx = XGraphics.FromPdfPage(page);
+                        DrawHeader(gfx, page, "REPORTE DE TIPO BIEN EN PESOS", "TIPO DE BIEN PESOS EN GENERAL", anio, mes, idFinanciamiento, pageNumber, 1);
+                        DrawFooter(gfx, page);
+                        currentY = contentMarginTop;
+                    }
+
+                    gfx.DrawRectangle(XPens.Black, contentMarginLeft, currentY, totalTableWidth, rowHeight);
+                    // El "TOTAL GENERAL" abarca las primeras 2 columnas (TipoBien y Descripción Bien)
+                    gfx.DrawString("TOTAL GENERAL", summaryFont, XBrushes.Black, new XRect(contentMarginLeft - cellPadding, currentY + cellPadding, col1Width + col2Width, rowHeight), XStringFormats.TopRight);
+                    gfx.DrawString($"{totalCostoGeneral:C2}", summaryFont, XBrushes.Black, new XRect(contentMarginLeft + col1Width + col2Width + cellPadding, currentY + cellPadding, col3Width, rowHeight), XStringFormats.TopCenter);
+                    gfx.DrawLine(XPens.Black, contentMarginLeft + col1Width + col2Width, currentY, contentMarginLeft + col1Width + col2Width, currentY + rowHeight);
+                }
+
+                document.Save(ms);
+                ms.Position = 0;
+                return File(ms.ToArray(), "application/pdf", $"ReporteTipobienPesos_{DateTime.Now:yyyyMMddHHmmss}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al generar reporte de tipo de biene en pesos: {ex.Message}");
+            }
+        }
+
         // GET: api/Reportes/ReporteTipoBienPDF
         [HttpGet("ReporteTipoBienPDF")]
         public async Task<IActionResult> GenerarReporteTipoBienPDF(
@@ -2150,12 +2324,14 @@ namespace WebApiPatrimonio.Controllers
             string mesNombre = mes == 0 ? "0" :CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(mes);
             string fechaReporte = mes == 0 ? $"{anio}" : $"{mesNombre.ToUpper()} DE {anio}"; // Mes 0 para anual, Mes X para mensual
 
-            if (tipoReporte != "BIENES POR TIPO")
+            if (tipoReporte == "BIENES POR TIPO")
             {
-                gfx.DrawString($"CONCENTRADO DE {tipoReporte} CORRESPONDIENTE A: {fechaReporte}", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
-            }
-            else {
                 gfx.DrawString($"REPORTE CONSECUTIVO POR TIPO Y NOMBRE DE BIEN", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
+            }
+            else if (tipoReporte == "TIPO DE BIEN PESOS EN GENERAL") {
+                gfx.DrawString($"CONCENTRADO POR {tipoReporte} ({fechaReporte})", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
+            } else { 
+                gfx.DrawString($"CONCENTRADO DE {tipoReporte} CORRESPONDIENTE A: {fechaReporte}", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
             }
 
                 string financiamientoText = idFinanciamiento == 0 ? "TODOS" : idFinanciamiento.ToString();
