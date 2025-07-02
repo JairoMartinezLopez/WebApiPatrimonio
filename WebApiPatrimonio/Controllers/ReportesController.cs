@@ -2858,8 +2858,7 @@ namespace WebApiPatrimonio.Controllers
                 double marginLeft = (page.Width - tableWidth) / 2;
 
                 int pageNumber = 1;
-                int totalPages = ContarPaginasRequeridas(groupedData, page.Height, marginTop, marginBottom, rowHeight);
-                var pageInfos = new List<(PdfPage Page, double X, double Y, int PageNumber)>();
+                int totalPages = 1;
 
                 Action DrawTableHeaders = () =>
                 {
@@ -2876,7 +2875,7 @@ namespace WebApiPatrimonio.Controllers
                     currentY += rowHeight;
                 };
 
-                DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages, pageInfos);
+                DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages);
                 DrawFooter(gfx, page);
                 DrawTableHeaders();
 
@@ -2901,7 +2900,7 @@ namespace WebApiPatrimonio.Controllers
                             page = document.AddPage();
                             gfx = XGraphics.FromPdfPage(page);
                             currentY = marginTop;
-                            DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages, pageInfos);
+                            DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages);
                             DrawFooter(gfx, page);
                             DrawTableHeaders(); // Redibujar los encabezados de la tabla en la nueva página
                         }
@@ -2923,7 +2922,7 @@ namespace WebApiPatrimonio.Controllers
                             page = document.AddPage();
                             gfx = XGraphics.FromPdfPage(page);
                             currentY = marginTop;
-                            DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages, pageInfos);
+                            DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages);
                             DrawFooter(gfx, page);
                             DrawTableHeaders(); 
 
@@ -2941,7 +2940,7 @@ namespace WebApiPatrimonio.Controllers
                                 page = document.AddPage();
                                 gfx = XGraphics.FromPdfPage(page);
                                 currentY = marginTop;
-                                DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages, pageInfos);
+                                DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages);
                                 DrawFooter(gfx, page);
                                 DrawTableHeaders();
                             }
@@ -2981,7 +2980,7 @@ namespace WebApiPatrimonio.Controllers
                         page = document.AddPage();
                         gfx = XGraphics.FromPdfPage(page);
                         currentY = marginTop;
-                        DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages, pageInfos);
+                        DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages);
                         DrawFooter(gfx, page);
                         DrawTableHeaders(); // Redibujar los encabezados de la tabla
                     }
@@ -2997,7 +2996,7 @@ namespace WebApiPatrimonio.Controllers
                     page = document.AddPage();
                     gfx = XGraphics.FromPdfPage(page);
                     currentY = marginTop;
-                    DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages, pageInfos);
+                    DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages);
                     DrawFooter(gfx, page);
                     DrawTableHeaders();
                 }
@@ -3019,7 +3018,7 @@ namespace WebApiPatrimonio.Controllers
                     page = document.AddPage();
                     gfx = XGraphics.FromPdfPage(page);
                     currentY = marginTop;
-                    DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages, pageInfos);
+                    DrawHeaderBien(gfx, page, "REPORTE DE BIENES CONCENTRADO", nombreAreaReporte, idFinanciamiento, pageNumber, totalPages);
                     DrawFooter(gfx, page);
                 }
 
@@ -3035,8 +3034,6 @@ namespace WebApiPatrimonio.Controllers
                 currentY = notaRect.Bottom + 20;
                 DrawSignaturesBienes(gfx, page, currentY, "REPORTE DE BIENES CONCENTRADO");
 
-                int totalPaginasReales = document.Pages.Count;
-
                 document.Save(ms);
                 ms.Position = 0;
                 return File(ms.ToArray(), "application/pdf", $"ReporteDeBienesConcentrado_{DateTime.Now:yyyyMMddHHmmss}.pdf");
@@ -3046,80 +3043,6 @@ namespace WebApiPatrimonio.Controllers
                 return StatusCode(500, $"Error al generar reporte de bienes concentrado: {ex.Message}");
             }
         }
-        private int ContarPaginasRequeridas<T>(
-            List<T> groupedData,
-            double pageHeight,
-            double marginTop,
-            double marginBottom,
-            double rowHeight)
-        {
-            int pageCount = 1;
-            double currentY = marginTop;
-
-            foreach (var area in groupedData)
-            {
-                // Usa reflexión dinámica para obtener propiedades
-                var areaName = area.GetType().GetProperty("Area")?.GetValue(area)?.ToString();
-                var tiposBien = area.GetType().GetProperty("TiposBien")?.GetValue(area) as IEnumerable<object>;
-
-                if (currentY + rowHeight > pageHeight - marginBottom)
-                {
-                    pageCount++;
-                    currentY = marginTop;
-                }
-                currentY += rowHeight + 5;
-
-                if (tiposBien != null)
-                {
-                    foreach (var tipo in tiposBien)
-                    {
-                        var bienes = tipo.GetType().GetProperty("Bienes")?.GetValue(tipo) as IEnumerable<object>;
-
-                        if (currentY + rowHeight > pageHeight - marginBottom)
-                        {
-                            pageCount++;
-                            currentY = marginTop;
-                        }
-                        currentY += rowHeight;
-
-                        if (bienes != null)
-                        {
-                            foreach (var bien in bienes)
-                            {
-                                if (currentY + rowHeight > pageHeight - marginBottom)
-                                {
-                                    pageCount++;
-                                    currentY = marginTop;
-                                }
-                                currentY += rowHeight;
-                            }
-                        }
-
-                        if (currentY + rowHeight + 10 > pageHeight - marginBottom)
-                        {
-                            pageCount++;
-                            currentY = marginTop;
-                        }
-                        currentY += rowHeight + 10;
-                    }
-                }
-
-                if (currentY + rowHeight > pageHeight - marginBottom)
-                {
-                    pageCount++;
-                    currentY = marginTop;
-                }
-                currentY += rowHeight;
-            }
-
-            if (currentY + (rowHeight * 5) > pageHeight - marginBottom)
-            {
-                pageCount++;
-            }
-
-            return pageCount;
-        }
-
 
         List<string> wrapText(string text, int maxCharsPerLine)
         {
@@ -3266,7 +3189,7 @@ namespace WebApiPatrimonio.Controllers
             gfx.DrawString("DIRECCIÓN DE ADMINISTRACIÓN", signatureLabelFont, XBrushes.Black, direccionAutorizoRect, XStringFormats.Center);
         }
 
-        private void DrawHeaderBien(XGraphics gfx, PdfPage page, string reportTitle, string area, int idFinanciamiento, int currentPage, int totalPages, List<(PdfPage Page, double X, double Y, int PageNumber)>? pageInfos = null)
+        private void DrawHeaderBien(XGraphics gfx, PdfPage page, string reportTitle, string area, int idFinanciamiento, int currentPage, int totalPages)
         {
             string logoPathLeft = Path.Combine(_webHostEnvironment.WebRootPath, "images", "consejo_judicatura.png"); // Asegúrate de que el nombre del archivo sea correcto
             string logoPathRight = Path.Combine(_webHostEnvironment.WebRootPath, "images", "consejo_judicatura.png"); // Si tienes un segundo logo, ajústalo
@@ -3323,10 +3246,7 @@ namespace WebApiPatrimonio.Controllers
             string financiamientoText = idFinanciamiento == 0 ? "TODOS" : idFinanciamiento.ToString();
             gfx.DrawString($"FUENTE DE FINANCIAMIENTO: {financiamientoText}", fontBold, XBrushes.Black, new XRect(0, y + 90, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
 
-            double pagX = page.Width - x - 70;
-            double pagY = y + 83;
             gfx.DrawString($"Pág. {currentPage} de {totalPages}", fontBold, XBrushes.Black, new XPoint(page.Width - x - 70, y + 83)); // Paginación (esquina superior derecha)
-            pageInfos?.Add((page, pagX, pagY, currentPage));
 
             gfx.DrawLine(XPens.Black, x, y + 100, page.Width - x, y + 100); // Dibuja una línea después del encabezado
         }
