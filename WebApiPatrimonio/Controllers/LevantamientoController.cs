@@ -123,7 +123,7 @@ namespace WebApiPatrimonio.Controllers
 
             if (!string.IsNullOrEmpty(observaciones))
                 query = query.Where(u => u.Observaciones.Contains(observaciones));
-            
+
             if (existeBien.HasValue)
                 query = query.Where(u => u.ExisteElBien == existeBien);
 
@@ -338,7 +338,7 @@ namespace WebApiPatrimonio.Controllers
             {
                 await _context.Database.OpenConnectionAsync();
                 using var reader = await command.ExecuteReaderAsync();
-                var resultados = new List<dynamic>(); 
+                var resultados = new List<dynamic>();
                 while (await reader.ReadAsync())
                 {
                     resultados.Add(new
@@ -525,12 +525,13 @@ namespace WebApiPatrimonio.Controllers
                 using var ms = new MemoryStream();
                 using var document = new PdfDocument();
                 document.Info.Title = "Reporte de Bienes Verificados"; // New document title
-
+                var pages = new List<(PdfPage Page, XGraphics Gfx)>();
                 PdfPage page = document.AddPage();
                 //page.Orientation = PdfSharpCore.PageOrientation.Landscape;
                 //page.Size = PdfSharpCore.PageSize.Legal;
 
                 XGraphics gfx = XGraphics.FromPdfPage(page);
+                pages.Add((page, gfx));
 
                 double contentMarginTop = 150;
                 double contentMarginBottom = 70;
@@ -585,7 +586,7 @@ namespace WebApiPatrimonio.Controllers
                     currentY += rowHeightBase;
                 };
 
-                DrawHeader(gfx, page, "REPORTE DE BIENES VERIFICADOS", "BIENES VERIFICADOS", 0, 0, nombreAreaReporte, pageNumber, 1);
+                //DrawHeader(gfx, page, "REPORTE DE BIENES VERIFICADOS", "BIENES VERIFICADOS", 0, 0, nombreAreaReporte, pageNumber, 1);
                 DrawFooter(gfx, page);
                 DrawTableHeaders();
 
@@ -626,12 +627,13 @@ namespace WebApiPatrimonio.Controllers
                         //page.Orientation = PdfSharpCore.PageOrientation.Landscape;
                         //page.Size = PdfSharpCore.PageSize.Legal;
                         gfx = XGraphics.FromPdfPage(page);
+                        pages.Add((page, gfx));
                         availableContentWidth = page.Width - 80;
                         colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
                         actualTableWidth = colWidths.Sum();
                         contentMarginLeft = (page.Width - actualTableWidth) / 2;
 
-                        DrawHeader(gfx, page, "REPORTE DE BIENES VERIFICADOS", "BIENES VERIFICADOS", 0, 0, nombreAreaReporte, pageNumber, 1);
+                       // DrawHeader(gfx, page, "REPORTE DE BIENES VERIFICADOS", "BIENES VERIFICADOS", 0, 0, nombreAreaReporte, pageNumber, 1);
                         DrawFooter(gfx, page);
                         currentY = contentMarginTop;
                         DrawTableHeaders();
@@ -669,7 +671,12 @@ namespace WebApiPatrimonio.Controllers
                     currentY += adjustedRowHeight;
 
                 }
-
+                int finalTotalPages = pages.Count;
+                for (int i = 0; i < finalTotalPages; i++)
+                {
+                    var (pg, g) = pages[i];
+                    DrawHeader(g, pg, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, i + 1, finalTotalPages);
+                }
                 document.Save(ms);
                 ms.Position = 0;
                 return File(ms.ToArray(), "application/pdf", $"ReporteBienesVerificadoss_{DateTime.Now:yyyyMMddHHmmss}.pdf");
@@ -775,7 +782,7 @@ namespace WebApiPatrimonio.Controllers
                                         reader["Modelo"]?.ToString(),
                                         reader["Observaciones"]?.ToString(),
                                         reader.GetDateTime(reader.GetOrdinal("FechaVerificacion"))
-                                        //reader["AreaReportada"]?.ToString()
+                                    //reader["AreaReportada"]?.ToString()
                                     ));
                                 }
                             }
@@ -786,13 +793,13 @@ namespace WebApiPatrimonio.Controllers
                 using var ms = new MemoryStream();
                 using var document = new PdfDocument();
                 document.Info.Title = "Reporte de Bienes Sobrantes"; // New document title
-
+                var pages = new List<(PdfPage Page, XGraphics Gfx)>();
                 PdfPage page = document.AddPage();
                 //page.Orientation = PdfSharpCore.PageOrientation.Landscape;
                 //page.Size = PdfSharpCore.PageSize.Legal;
 
                 XGraphics gfx = XGraphics.FromPdfPage(page);
-
+                pages.Add((page, gfx));
                 double contentMarginTop = 150;
                 double contentMarginBottom = 70;
                 double contentMarginLeft = 0;
@@ -846,7 +853,7 @@ namespace WebApiPatrimonio.Controllers
                     currentY += rowHeightBase;
                 };
 
-                DrawHeader(gfx, page, "REPORTE DE BIENES SOBRANTES", "BIENES SOBRANTES", 0, 0, nombreAreaReporte, pageNumber, 1);
+                //DrawHeader(gfx, page, "REPORTE DE BIENES SOBRANTES", "BIENES SOBRANTES", 0, 0, nombreAreaReporte, pageNumber, 1);
                 DrawFooter(gfx, page);
                 DrawTableHeaders();
 
@@ -884,15 +891,14 @@ namespace WebApiPatrimonio.Controllers
                     {
                         pageNumber++;
                         page = document.AddPage();
-                        //page.Orientation = PdfSharpCore.PageOrientation.Landscape;
-                        //page.Size = PdfSharpCore.PageSize.Legal;
                         gfx = XGraphics.FromPdfPage(page);
+                        pages.Add((page, gfx));
                         availableContentWidth = page.Width - 80;
                         colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
                         actualTableWidth = colWidths.Sum();
                         contentMarginLeft = (page.Width - actualTableWidth) / 2;
 
-                        DrawHeader(gfx, page, "REPORTE DE BIENES SOBRANTES", "BIENES SOBRANTES", 0, 0, nombreAreaReporte, pageNumber, 1);
+                        //DrawHeader(gfx, page, "REPORTE DE BIENES SOBRANTES", "BIENES SOBRANTES", 0, 0, nombreAreaReporte, pageNumber, 1);
                         DrawFooter(gfx, page);
                         currentY = contentMarginTop;
                         DrawTableHeaders();
@@ -928,9 +934,14 @@ namespace WebApiPatrimonio.Controllers
                         gfx.DrawLine(dottedBottomBorderPen, contentMarginLeft, currentY + adjustedRowHeight, contentMarginLeft + actualTableWidth, currentY + adjustedRowHeight);
                     }
                     currentY += adjustedRowHeight;
-                
-                }
 
+                }
+                int finalTotalPages = pages.Count;
+                for (int i = 0; i < finalTotalPages; i++)
+                {
+                    var (pg, g) = pages[i];
+                    DrawHeader(g, pg, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, i + 1, finalTotalPages);
+                }
                 document.Save(ms);
                 ms.Position = 0;
                 return File(ms.ToArray(), "application/pdf", $"ReporteBienesSobrantes_{DateTime.Now:yyyyMMddHHmmss}.pdf");
@@ -1045,12 +1056,13 @@ namespace WebApiPatrimonio.Controllers
                 using var ms = new MemoryStream();
                 using var document = new PdfDocument();
                 document.Info.Title = "Reporte de Bienes Faltantes"; // New document title
-
+                var pages = new List<(PdfPage Page, XGraphics Gfx)>();
                 PdfPage page = document.AddPage();
                 //page.Orientation = PdfSharpCore.PageOrientation.Landscape;
                 //page.Size = PdfSharpCore.PageSize.Legal;
 
                 XGraphics gfx = XGraphics.FromPdfPage(page);
+                pages.Add((page, gfx));
 
                 double contentMarginTop = 150;
                 double contentMarginBottom = 70;
@@ -1105,7 +1117,7 @@ namespace WebApiPatrimonio.Controllers
                     currentY += rowHeightBase;
                 };
 
-                DrawHeader(gfx, page, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, pageNumber, 1);
+                //DrawHeader(gfx, page, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, pageNumber, ' ');
                 DrawFooter(gfx, page);
                 DrawTableHeaders();
 
@@ -1143,15 +1155,15 @@ namespace WebApiPatrimonio.Controllers
                     {
                         pageNumber++;
                         page = document.AddPage();
-                        //page.Orientation = PdfSharpCore.PageOrientation.Landscape;
-                        //page.Size = PdfSharpCore.PageSize.Legal;
                         gfx = XGraphics.FromPdfPage(page);
+                        pages.Add((page, gfx));
+
                         availableContentWidth = page.Width - 80;
                         colWidths = columnHeaders.Select(ch => ch.WidthFactor * availableContentWidth / totalFactor).ToArray();
                         actualTableWidth = colWidths.Sum();
                         contentMarginLeft = (page.Width - actualTableWidth) / 2;
 
-                        DrawHeader(gfx, page, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, pageNumber, 1);
+                        //DrawHeader(gfx, page, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, pageNumber, ' ');
                         DrawFooter(gfx, page);
                         currentY = contentMarginTop;
                         DrawTableHeaders();
@@ -1190,6 +1202,13 @@ namespace WebApiPatrimonio.Controllers
 
                 }
 
+                int finalTotalPages = pages.Count;
+                for (int i = 0; i < finalTotalPages; i++)
+                {
+                    var (pg, g) = pages[i];
+                    DrawHeader(g, pg, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, i + 1, finalTotalPages);
+                }
+
                 document.Save(ms);
                 ms.Position = 0;
                 return File(ms.ToArray(), "application/pdf", $"ReporteBienesFaltantes_{DateTime.Now:yyyyMMddHHmmss}.pdf");
@@ -1216,7 +1235,7 @@ namespace WebApiPatrimonio.Controllers
             return NoContent();
         }
 
-        [HttpPost("procesar-levantamientos-masivos")] 
+        [HttpPost("procesar-levantamientos-masivos")]
         public async Task<ActionResult> ProcesarLevantamientosMasivos([FromBody] LevantamientoMergeRequest request)
         {
             if (request == null || !request.ListaLevantamientos.Any())
