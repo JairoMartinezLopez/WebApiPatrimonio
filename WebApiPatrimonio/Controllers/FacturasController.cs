@@ -13,7 +13,7 @@ namespace WebApiPatrimonio.Controllers
     public class FacturasController : ControllerBase
     {
         private readonly ApplicationDbContext _ctx;
-        private const string RUTA_NAS = @"\\JAIRO\facturas"; // Ajusta al path real
+        private const string RUTA_NAS = @"\\DESKTOP-8HN2LR9\facturas"; // Ajusta al path real
 
         public FacturasController(ApplicationDbContext ctx) => _ctx = ctx;
 

@@ -132,6 +132,7 @@ app.MapGet("/catalogo/{pantalla}",
            (string pantalla, HttpRequest req, ICatService s)
                => s.GetRowsAsync(pantalla, req.Query));
 
+// --- INSERT / UPDATE ---------------------------------------
 app.MapPost("/catalogo/{pantalla}",
 async (string pantalla, JsonElement body, ICatService s) =>
 {
@@ -149,38 +150,54 @@ async (string pantalla, JsonElement body, ICatService s) =>
     {
         return Results.Unauthorized();
     }
-    catch (Exception ex)
+    catch (Exception ex)          // ⬅ devolvemos 400 con el texto
     {
-        return Results.Problem(ex.Message);
+        return Results.BadRequest(new { sql = ex.Message });
     }
 });
 
+// --- DELETE -------------------------------------------------
 app.MapDelete("/catalogo/{pantalla}/{pk}/{id}",
-    async (string pantalla, string pk, int id, ICatService s) =>
+async (string pantalla, string pk, int id, ICatService s) =>
+{
+    try
     {
-        try
-        {
-            await s.DeleteAsync(pantalla, pk, id);
-            return Results.Ok(new { ok = true });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Results.Unauthorized();
-        }
-        catch (SqlException ex)
-        {
-            return Results.BadRequest(new { sql = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem(ex.Message);
-        }
-    });
+        await s.DeleteAsync(pantalla, pk, id);
+        return Results.Ok(new { ok = true });
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Unauthorized();
+    }
+    catch (SqlException ex)
+    {
+        return Results.BadRequest(new { sql = ex.Message });
+    }
+    catch (Exception ex)          // ⬅ genérico a 400
+    {
+        return Results.BadRequest(new { sql = ex.Message });
+    }
+});
 
 
+// --- TOGGLE Activo / Bloqueado ------------------------------
 app.MapPatch("/toggle/{pantalla}/{pk}/{id}/{col}",
-             (string pantalla, string pk, int id, string col, ICatService s)
-                 => s.ToggleAsync(pantalla, pk, id, col));
+async (string pantalla, string pk, int id, string col, ICatService s) =>
+{
+    try
+    {
+        await s.ToggleAsync(pantalla, pk, id, col);
+        return Results.Ok(new { ok = true });
+    }
+    catch (SqlException ex)
+    {
+        return Results.BadRequest(new { sql = ex.Message });
+    }
+    catch (Exception ex)          // ⬅ genérico a 400
+    {
+        return Results.BadRequest(new { sql = ex.Message });
+    }
+});
 
 app.MapGet("/foraneas/{pantalla}",
            (string pantalla, ICatService s) => s.GetForaneasAsync(pantalla));

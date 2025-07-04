@@ -119,6 +119,7 @@ public class CatService : ICatService
 
 
     /* ─────────── GetColumnsAsync ─────────── */
+    /* ─────────── GetColumnsAsync ─────────── */
     public async Task<IEnumerable<ColMeta>> GetColumnsAsync(string pantalla)
     {
         if (!_pantallas.TryGetValue(pantalla, out var cfg))
@@ -126,38 +127,65 @@ public class CatService : ICatService
 
         await using var cnn = new SqlConnection(_cfg.GetConnectionString("Conexion"));
 
+        /* ① ——— si hay SpSelect explícito ——— */
+        if (!string.IsNullOrWhiteSpace(cfg.SpSelect?.Trim()))
+        {
+            const string dmv = """
+            DECLARE @pk sysname = @PkName;
+
+            SELECT  name                              AS Name,
+                    system_type_name                  AS DataType,
+                    is_nullable                       AS IsNullable,
+                    CAST(CASE WHEN name = @pk THEN 1 ELSE 0 END AS bit) AS IsPK,
+                    CAST(0 AS bit)                    AS IsIdentity
+            FROM    sys.dm_exec_describe_first_result_set
+                    (N'EXEC ' + @sp, NULL, 0);
+        """;
+            return await cnn.QueryAsync<ColMeta>(
+                dmv,
+                new { sp = cfg.SpSelect.Trim(), PkName = cfg.Pk ?? "" });
+        }
+
+        /* ② ——— TABL / VIST (ya trae IsPK correcto) ——— */
         if (cfg.Tipo is "TABL" or "VIST")
         {
             const string sql = """
-                SELECT c.name                 AS Name,
-                       t.name                 AS DataType,
-                       c.is_nullable          AS IsNullable,
-                       CAST(i.is_primary_key AS bit) AS IsPK,
-                       c.is_identity          AS IsIdentity
-                FROM   sys.columns c
-                JOIN   sys.types   t ON c.user_type_id = t.user_type_id
-                LEFT  JOIN sys.index_columns ic
-                           ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                LEFT  JOIN sys.indexes i
-                           ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                           AND i.is_primary_key = 1
-                WHERE  c.object_id = OBJECT_ID(@obj)
-                ORDER BY c.column_id;
-            """;
+            SELECT  c.name                       AS Name,
+                    t.name                       AS DataType,
+                    c.is_nullable                AS IsNullable,
+                    CAST(i.is_primary_key AS bit) AS IsPK,
+                    c.is_identity                AS IsIdentity
+            FROM    sys.columns c
+            JOIN    sys.types   t ON c.user_type_id = t.user_type_id
+            LEFT JOIN sys.index_columns ic
+                       ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+            LEFT JOIN sys.indexes i
+                       ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                       AND i.is_primary_key = 1
+            WHERE   c.object_id = OBJECT_ID(@obj)
+            ORDER BY c.column_id;
+        """;
             return await cnn.QueryAsync<ColMeta>(sql, new { obj = cfg.ObjetoSQL });
         }
 
-        const string dmv = """
-            SELECT name              AS Name,
-                   system_type_name  AS DataType,
-                   is_nullable       AS IsNullable,
-                   CAST(0 AS bit)    AS IsPK,
-                   CAST(0 AS bit)    AS IsIdentity
-            FROM sys.dm_exec_describe_first_result_set
-                 (N'EXEC ' + @sp, NULL, 0);
-        """;
-        return await cnn.QueryAsync<ColMeta>(dmv, new { sp = cfg.ObjetoSQL });
+        /* ③ ——— PROC sin SpSelect ——— */
+        const string dmvFallback = """
+        DECLARE @pk sysname = @PkName;
+
+        SELECT  name                              AS Name,
+                system_type_name                  AS DataType,
+                is_nullable                       AS IsNullable,
+                CAST(CASE WHEN name = @pk THEN 1 ELSE 0 END AS bit) AS IsPK,
+                CAST(0 AS bit)                    AS IsIdentity
+        FROM    sys.dm_exec_describe_first_result_set
+                (N'EXEC ' + @sp, NULL, 0);
+    """;
+        return await cnn.QueryAsync<ColMeta>(
+            dmvFallback,
+            new { sp = cfg.ObjetoSQL, PkName = cfg.Pk ?? "" });
     }
+
+
 
     /* ─────────── GetRowsAsync (sin cambios) ─────────── */
     public async Task<IEnumerable<IDictionary<string, object>>> GetRowsAsync(string pantalla, IQueryCollection qs)
@@ -217,15 +245,28 @@ public class CatService : ICatService
         string sp = esAlta ? cfg.SpIns! : cfg.SpUpd!;
 
         var d = new DynamicParameters();
-        foreach (var prop in payload)
-            d.Add($"@{prop.Key}", prop.Value?.ToObject<object>() ?? DBNull.Value);
 
-        if (!d.ParameterNames.Contains("@IdPantalla")) d.Add("@IdPantalla", 1);
-        if (!d.ParameterNames.Contains("@IdGeneral")) d.Add("@IdGeneral", GetUserId());
+        /* ─── agrega solo tokens con valor (null/undefined se omiten) ─── */
+        foreach (var prop in payload.Properties())
+        {
+            if (prop.Value.Type is JTokenType.Null or JTokenType.Undefined)
+                continue;                          // deja que SQL use el DEFAULT
+
+            object? val = (prop.Value as JValue)?.Value ?? prop.Value.ToString();
+            d.Add("@" + prop.Name, val);
+        }
+
+        // auditoría
+        d.Add("@IdPantalla", 1);
+        d.Add("@IdGeneral", GetUserId());
 
         await using var cnn = new SqlConnection(_cfg.GetConnectionString("Conexion"));
         await cnn.ExecuteAsync(sp, d, commandType: CommandType.StoredProcedure);
     }
+
+
+
+
 
     public async Task ToggleAsync(string pantalla, string pkName, int id, string column)
     {
