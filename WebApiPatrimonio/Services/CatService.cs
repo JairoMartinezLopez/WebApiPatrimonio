@@ -237,7 +237,7 @@ public class CatService : ICatService
         if (string.IsNullOrWhiteSpace(cfg.SpIns) || string.IsNullOrWhiteSpace(cfg.SpUpd))
             throw new InvalidOperationException("La pantalla es solo lectura");
 
-        string pkName = cfg.Pk ?? "";
+        string pkName = cfg.Pk ?? "0";
         bool esAlta = string.IsNullOrEmpty(pkName) ||
                         !payload.TryGetValue(pkName, out var pkTok) ||
                         pkTok!.Value<int>() == 0;
