@@ -450,7 +450,7 @@ namespace WebApiPatrimonio.Controllers
                         idLevantamientoInventario = reader["idLevantamientoInventario"],
                         idBien = reader["idBien"],
                         NoInventario = reader["NoInventario"],
-                        Marca = reader["Marca"],
+                        Marca = reader["NombreMarca"],
                         Modelo = reader["Modelo"],
                         Serie = reader["Serie"],
                         ObservacionesLevantamiento = reader["ObservacionesLevantamiento"],
@@ -675,7 +675,7 @@ namespace WebApiPatrimonio.Controllers
                 for (int i = 0; i < finalTotalPages; i++)
                 {
                     var (pg, g) = pages[i];
-                    DrawHeader(g, pg, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, i + 1, finalTotalPages);
+                    DrawHeader(g, pg, "REPORTE DE BIENES VERIFICADOS", "BIENES VERIFICADOS", 0, 0, nombreAreaReporte, i + 1, finalTotalPages);
                 }
                 document.Save(ms);
                 ms.Position = 0;
@@ -940,7 +940,7 @@ namespace WebApiPatrimonio.Controllers
                 for (int i = 0; i < finalTotalPages; i++)
                 {
                     var (pg, g) = pages[i];
-                    DrawHeader(g, pg, "REPORTE DE BIENES FALTANTES", "BIENES FALTANTES", 0, 0, nombreAreaReporte, i + 1, finalTotalPages);
+                    DrawHeader(g, pg, "REPORTE DE BIENES SOBRANTES", "BIENES SOBRANTES", 0, 0, nombreAreaReporte, i + 1, finalTotalPages);
                 }
                 document.Save(ms);
                 ms.Position = 0;
@@ -983,6 +983,7 @@ namespace WebApiPatrimonio.Controllers
                     {
                         idBien = reader["idBien"],
                         NoInventario = reader["NoInventario"],
+                        Nombre = reader["NombreMarca"],
                         Serie = reader["Serie"],
                         Modelo = reader["Modelo"],
                         Observaciones = reader["Observaciones"],
@@ -1378,7 +1379,7 @@ namespace WebApiPatrimonio.Controllers
             }
             else if (tipoReporte == "BIENES FALTANTES")
             {
-                gfx.DrawString($"REPORETDE DE BIENES FALTANTES", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
+                gfx.DrawString($"REPORTE DE BIENES FALTANTES", fontBold, XBrushes.Black, new XRect(0, y + 60, page.Width, fontSubTitle.Height), XStringFormats.TopCenter);
             }
             else
             {
