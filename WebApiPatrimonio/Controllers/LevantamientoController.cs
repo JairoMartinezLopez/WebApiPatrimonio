@@ -952,7 +952,7 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-        // GET: api/LevantamientosInventario/faltantes/{idEventoInventario}
+        // GET: api/Levantamiento/faltantes/{idEventoInventario}
         [HttpGet("faltantes/{idEventoInventario}")]
         public async Task<ActionResult<IEnumerable<dynamic>>> ObtenerBienesFaltantes(int idEventoInventario)
         {
@@ -1002,7 +1002,7 @@ namespace WebApiPatrimonio.Controllers
             }
         }
 
-        // GET: api/Reportes/ReporteBienesfaltantesPDF
+        // GET: api/Levantamiento/ReporteBienesfaltantesPDF
         [HttpGet("ReporteBienesFaltantesPDF")]
         public async Task<IActionResult> GenerarReporteBienesFaltantesPDF(
             [FromQuery] int idEventoInventario)
@@ -1010,7 +1010,7 @@ namespace WebApiPatrimonio.Controllers
             try
             {
                 // Data structure to hold the results from PA_SEL_BIENES_SOBRANTES
-                var bienesFaltantesData = new List<(long idBien, string NoInventario, string NombreMarca, string Serie, string Modelo, string Observaciones, DateTime FechaVerificacion/*, string AreaReportada*/)>();
+                var bienesFaltantesData = new List<(long idBien, string NoInventario, string NombreMarca, string Serie, string Modelo, string Observaciones, DateTime? FechaVerificacion/*, string AreaReportada*/)>();
                 string nombreAreaReporte = "";
 
                 using (var connection = _context.Database.GetDbConnection())
@@ -1027,27 +1027,26 @@ namespace WebApiPatrimonio.Controllers
                         {
                             if (await reader.ReadAsync() && reader.FieldCount > 0)
                             {
-                                var ordinal = reader.GetOrdinal("NombreAreaParaTitulo");
-                                if (!reader.IsDBNull(ordinal))
-                                {
-                                    nombreAreaReporte = reader.GetString(ordinal);
-                                }
+                                int ordinal = reader.GetOrdinal("NombreAreaParaTitulo");
+                                nombreAreaReporte = !reader.IsDBNull(ordinal) ? reader.GetString(ordinal) : "";
                             }
 
+                            // Segundo result set: datos de bienes faltantes
                             if (await reader.NextResultAsync())
                             {
                                 while (await reader.ReadAsync())
                                 {
-                                    bienesFaltantesData.Add((
-                                        reader.GetInt64(reader.GetOrdinal("idBien")),
-                                        reader["NoInventario"]?.ToString(),
-                                        reader["NombreMarca"]?.ToString(),
-                                        reader["Serie"]?.ToString(),
-                                        reader["Modelo"]?.ToString(),
-                                        reader["Observaciones"]?.ToString(),
-                                        reader.GetDateTime(reader.GetOrdinal("FechaVerificacion"))
-                                    //reader["AreaReportada"]?.ToString()
-                                    ));
+                                    long idBien = reader.IsDBNull(reader.GetOrdinal("idBien")) ? 0 : reader.GetInt64(reader.GetOrdinal("idBien"));
+                                    string noInventario = reader["NoInventario"]?.ToString() ?? "";
+                                    string nombreMarca = reader["NombreMarca"]?.ToString() ?? "";
+                                    string serie = reader["Serie"]?.ToString() ?? "";
+                                    string modelo = reader["Modelo"]?.ToString() ?? "";
+                                    string observaciones = reader["Observaciones"]?.ToString() ?? "";
+                                    DateTime? fechaVerificacion = reader.IsDBNull(reader.GetOrdinal("FechaVerificacion"))
+                                        ? (DateTime?)null
+                                        : reader.GetDateTime(reader.GetOrdinal("FechaVerificacion"));
+
+                                    bienesFaltantesData.Add((idBien, noInventario, nombreMarca, serie, modelo, observaciones, fechaVerificacion));
                                 }
                             }
                         }
@@ -1130,7 +1129,7 @@ namespace WebApiPatrimonio.Controllers
                     item.Serie,
                     item.Modelo,
                     item.Observaciones,
-                    item.FechaVerificacion.ToString("dd/MM/yyyy"),
+                    item.FechaVerificacion?.ToString("dd/MM/yyyy"),
                     //item.AreaReportada
                 };
 
