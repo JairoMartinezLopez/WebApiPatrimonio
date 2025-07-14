@@ -356,12 +356,10 @@ namespace WebApiPatrimonio.Controllers
             try
             {
                 await _context.Database.ExecuteSqlRawAsync(
-                    "EXEC PA_INS_BIENES @IdPantalla, @IdGeneral, @idColor, @FechaAlta, @Aviso, @Serie, @Modelo, " +
-                    "@idEstadoFisico, @idMarca, @Costo, @Etiquetado, @FechaEtiquetado, @Activo, @Disponibilidad, " +
-                    "@FechaBaja, @idCausalBaja, @idDisposicionFinal, @idFactura, @PartidaContable, @idCatalogoBien, " +
-                    "@Observaciones, @Salida",
+                    "EXEC PA_INS_BIENES @IdPantalla, @IdGeneral, @idBien, @idColor, @FechaAlta, @Aviso, @Serie, @Modelo, @idEstadoFisico, @idMarca, @Costo, @Etiquetado, @FechaEtiquetado, @Activo, @Disponibilidad, @FechaBaja, @idCausalBaja, @idDisposicionFinal, @idFactura, @PartidaContable, @idCatalogoBien, @Observaciones, @Salida",
                     new SqlParameter("@IdPantalla", 1),
                     new SqlParameter("@IdGeneral", 1),
+                    new SqlParameter("@idBien", DBNull.Value), // porque es opcional, lo mandas como NULL
                     new SqlParameter("@idColor", bien.IdColor ?? (object)DBNull.Value),
                     new SqlParameter("@FechaAlta", bien.FechaAlta ?? (object)DBNull.Value),
                     new SqlParameter("@Aviso", bien.Aviso ?? (object)DBNull.Value),
